@@ -51,7 +51,7 @@ class ProductScraper:
         try:
             response = requests.get(scraper_url, timeout=self.timeout)
             if response.status_code == 200:
-                soup = BeautifulSoup(response.content, 'html.parser')
+                soup = BeautifulSoup(response.content, 'html5lib')
                 
                 if 'amazon.com' in site:
                     products = self._parse_amazon(soup, site)
