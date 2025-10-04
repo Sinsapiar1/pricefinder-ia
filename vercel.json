@@ -2,18 +2,14 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/test.py",
+      "src": "api/hello.py",
       "use": "@vercel/python"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "api/test.py"
+      "dest": "api/hello.py"
     }
-  ],
-  "env": {
-    "FLASK_ENV": "production",
-    "FLASK_DEBUG": "false"
-  }
+  ]
 }
