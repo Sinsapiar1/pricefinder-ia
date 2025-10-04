@@ -8,7 +8,7 @@ def create_app(config_class=Config):
     app.config.from_object(config_class)
     
     # Habilitar CORS para permitir peticiones desde el frontend
-    CORS(app)
+    CORS(app, origins=['*'])  # Permitir todos los orígenes para Vercel
     
     # Registrar blueprints/rutas
     from app.routes import main_bp

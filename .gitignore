@@ -64,3 +64,6 @@ htmlcov/
 
 # Docker
 docker-compose.override.yml
+
+# Vercel
+.vercel
