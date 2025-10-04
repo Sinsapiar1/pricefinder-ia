@@ -16,6 +16,9 @@ class Config:
     HOST = os.environ.get('HOST', '0.0.0.0')
     PORT = int(os.environ.get('PORT', 5000))
     
+    # Configuración de producción
+    TESTING = os.environ.get('TESTING', 'False').lower() == 'true'
+    
     # Sitios para scraping
     TARGET_SITES = [
         'amazon.com',
@@ -28,3 +31,17 @@ class Config:
     # Límites de búsqueda
     MAX_RESULTS_PER_SITE = 5
     REQUEST_TIMEOUT = 30
+
+class ProductionConfig(Config):
+    """Configuración para producción"""
+    DEBUG = False
+    TESTING = False
+    
+class DevelopmentConfig(Config):
+    """Configuración para desarrollo"""
+    DEBUG = True
+    
+class TestingConfig(Config):
+    """Configuración para testing"""
+    TESTING = True
+    DEBUG = True
