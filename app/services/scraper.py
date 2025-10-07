@@ -50,54 +50,86 @@ class ProductScraper:
         if not target_url:
             return products
         
-        # Optimizar ScraperAPI para cuenta gratuita
-        # render=false ahorra créditos, country_code mejora resultados
+        # Configuración óptima de ScraperAPI por tienda
         scraper_params = {
             'api_key': self.api_key,
             'url': target_url,
-            'country_code': 'us',  # Asegurar resultados de USA
         }
         
-        # Render JS solo para sitios que lo necesitan (ahorra créditos)
-        if 'bestbuy' in site or 'walmart' in site:
+        # Amazon: Simple y efectivo (sin parámetros extra)
+        if 'amazon' in site:
+            scraper_params['country_code'] = 'us'
+            # Amazon funciona perfecto así
+        
+        # eBay: Sin render (rápido y barato)
+        elif 'ebay' in site:
+            scraper_params['country_code'] = 'us'
+            scraper_params['keep_headers'] = 'true'
+        
+        # Walmart: Necesita render JS + parámetros especiales
+        elif 'walmart' in site:
             scraper_params['render'] = 'true'
+            scraper_params['country_code'] = 'us'
+            scraper_params['wait_for_selector'] = '[data-automation-id="product-title"]'
+        
+        # BestBuy: Necesita render JS
+        elif 'bestbuy' in site:
+            scraper_params['render'] = 'true'
+            scraper_params['country_code'] = 'us'
+            scraper_params['wait_for_selector'] = '.sku-title'
         
         # Construir URL de ScraperAPI
         scraper_url = 'http://api.scraperapi.com'
         
         try:
+            print(f"    Request URL: {scraper_url}")
+            print(f"    Params: render={scraper_params.get('render', 'false')}, country={scraper_params.get('country_code')}")
+            
             response = requests.get(scraper_url, params=scraper_params, timeout=self.timeout)
-            print(f"    Response status: {response.status_code}")
+            print(f"    ✓ Response status: {response.status_code}")
             
             if response.status_code == 200:
+                # Guardar HTML para debug (primeros 500 chars)
+                html_preview = response.text[:500] if hasattr(response, 'text') else str(response.content[:500])
+                print(f"    HTML preview: {html_preview[:100]}...")
+                
                 soup = BeautifulSoup(response.content, 'html5lib')
                 
                 if 'amazon.com' in site:
                     products = self._parse_amazon(soup, site)
-                    print(f"    Amazon parseado: {len(products)} productos")
+                    print(f"    ✓ Amazon parseado: {len(products)} productos")
                 elif 'walmart.com' in site:
                     products = self._parse_walmart(soup, site)
-                    print(f"    Walmart parseado: {len(products)} productos")
+                    print(f"    ✓ Walmart parseado: {len(products)} productos")
                 elif 'ebay.com' in site:
                     products = self._parse_ebay(soup, site)
-                    print(f"    eBay parseado: {len(products)} productos")
+                    print(f"    ✓ eBay parseado: {len(products)} productos")
                 elif 'bestbuy.com' in site:
                     products = self._parse_bestbuy(soup, site)
-                    print(f"    BestBuy parseado: {len(products)} productos")
+                    print(f"    ✓ BestBuy parseado: {len(products)} productos")
             else:
                 print(f"    ⚠ Status code no exitoso: {response.status_code}")
-                # Si falla, intentar sin render (fallback)
+                # Si falla con render, intentar sin render (fallback)
                 if 'render' in scraper_params:
-                    print(f"    Reintentando sin render...")
+                    print(f"    → Reintentando sin render para ahorrar créditos...")
                     del scraper_params['render']
+                    if 'session_number' in scraper_params:
+                        del scraper_params['session_number']
+                    
                     response = requests.get(scraper_url, params=scraper_params, timeout=self.timeout)
                     if response.status_code == 200:
                         soup = BeautifulSoup(response.content, 'html5lib')
-                        if 'bestbuy.com' in site:
+                        
+                        if 'walmart.com' in site:
+                            products = self._parse_walmart(soup, site)
+                            print(f"    ✓ Walmart parseado (sin render): {len(products)} productos")
+                        elif 'bestbuy.com' in site:
                             products = self._parse_bestbuy(soup, site)
-                            print(f"    BestBuy parseado (sin render): {len(products)} productos")
+                            print(f"    ✓ BestBuy parseado (sin render): {len(products)} productos")
+        except requests.Timeout:
+            print(f"    ⏱️ Timeout después de {self.timeout}s - Sitio muy lento")
         except Exception as e:
-            print(f"    ✗ Error en scraping: {str(e)[:100]}")
+            print(f"    ✗ Error en scraping: {str(e)[:150]}")
         
         return products[:self.max_results]
     

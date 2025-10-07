@@ -309,24 +309,31 @@
                 </div>
             </div>
             
-            <!-- Products Table Responsiva -->
+            <!-- Products Cards/Table Responsivo -->
             <div class="bg-white rounded-3xl shadow-2xl p-6 sm:p-8 border border-gray-100">
                 <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 flex items-center">
                     <i class="fas fa-list mr-3 text-indigo-600"></i>
                     Resultados Detallados
                 </h2>
-                <div class="overflow-x-auto -mx-6 sm:mx-0">
+                
+                <!-- Vista de Cards para Móvil -->
+                <div id="productCards" class="block lg:hidden space-y-4">
+                    <!-- Cards will be inserted here by JavaScript -->
+                </div>
+                
+                <!-- Vista de Tabla para Desktop -->
+                <div class="hidden lg:block overflow-x-auto">
                     <table class="w-full" id="productsTable">
                         <thead>
                             <tr class="bg-gradient-to-r from-indigo-50 to-purple-50 border-b-2 border-indigo-200">
-                                <th class="px-4 sm:px-6 py-4 text-left text-xs sm:text-sm font-bold text-gray-700">Tienda</th>
-                                <th class="px-4 sm:px-6 py-4 text-left text-xs sm:text-sm font-bold text-gray-700">Producto</th>
-                                <th class="px-4 sm:px-6 py-4 text-center text-xs sm:text-sm font-bold text-gray-700 hidden sm:table-cell">Condición</th>
-                                <th class="px-4 sm:px-6 py-4 text-center text-xs sm:text-sm font-bold text-gray-700">Precio</th>
-                                <th class="px-4 sm:px-6 py-4 text-center text-xs sm:text-sm font-bold text-gray-700 hidden lg:table-cell">vs Promedio</th>
-                                <th class="px-4 sm:px-6 py-4 text-center text-xs sm:text-sm font-bold text-gray-700 hidden lg:table-cell">Valor</th>
-                                <th class="px-4 sm:px-6 py-4 text-center text-xs sm:text-sm font-bold text-gray-700 hidden md:table-cell">Recomendación</th>
-                                <th class="px-4 sm:px-6 py-4 text-center text-xs sm:text-sm font-bold text-gray-700">Acción</th>
+                                <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Tienda</th>
+                                <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Producto</th>
+                                <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Condición</th>
+                                <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Precio</th>
+                                <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">vs Promedio</th>
+                                <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Valor</th>
+                                <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Recomendación</th>
+                                <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Acción</th>
                             </tr>
                         </thead>
                         <tbody id="productsTableBody">

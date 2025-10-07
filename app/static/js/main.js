@@ -179,9 +179,10 @@ function displayStatistics(stats) {
     `).join('');
 }
 
-// Mostrar tabla de productos (MEJORADA CON NUEVOS CAMPOS)
+// Mostrar tabla de productos (MEJORADA Y RESPONSIVA)
 function displayProductsTable(products) {
     const tableBody = document.getElementById('productsTableBody');
+    const cardsContainer = document.getElementById('productCards');
     
     // Ordenar productos por recomendación y precio
     const sortedProducts = [...products].sort((a, b) => {
@@ -189,87 +190,126 @@ function displayProductsTable(products) {
         return (order[a.recomendacion] || 4) - (order[b.recomendacion] || 4) || a.precio - b.precio;
     });
     
-    tableBody.innerHTML = sortedProducts.map(product => {
-        const badgeClass = getBadgeClassNew(product.recomendacion);
-        const condicionBadge = getCondicionBadge(product.condicion || 'Desconocido');
-        const valorBar = getValorBar(product.valor_score || 50);
-        const precioVsPromedio = product.precio_vs_promedio || '0%';
-        const precioVsClass = precioVsPromedio.startsWith('-') ? 'text-green-600' : 'text-red-600';
-        const categoriaIcon = getCategoriaIcon(product.categoria || 'Diferente');
-        
-        // Tooltip con especificaciones
-        const especsTooltip = (product.especificaciones_detectadas && product.especificaciones_detectadas.length > 0)
-            ? product.especificaciones_detectadas.join(', ')
-            : 'N/A';
-        
-        return `
-            <tr class="border-b hover:bg-indigo-50 transition-colors">
-                <td class="px-4 sm:px-6 py-4">
-                    <div class="flex items-center">
-                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br ${getStoreColor(product.tienda)} flex items-center justify-center text-white font-bold text-sm mr-2">
-                            ${getStoreInitials(product.tienda)}
-                        </div>
-                        <span class="font-semibold text-gray-800 text-sm sm:text-base hidden sm:inline">${product.tienda}</span>
-                    </div>
-                </td>
-                <td class="px-4 sm:px-6 py-4 max-w-md">
-                    <div class="flex items-start">
-                        <span class="text-lg sm:text-xl mr-2 flex-shrink-0" title="${product.categoria}">${categoriaIcon}</span>
-                        <div class="min-w-0 flex-1">
-                            <p class="font-semibold text-gray-900 text-sm sm:text-base leading-tight mb-1" 
-                               style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
-                                ${product.nombre_normalizado || product.nombre_crudo}
-                            </p>
-                            <p class="text-xs text-gray-600 mt-1 italic" 
-                               title="${product.nombre_crudo}">
-                                ${product.nombre_crudo.substring(0, 80)}${product.nombre_crudo.length > 80 ? '...' : ''}
-                            </p>
-                            <!-- Mostrar condición en móvil -->
-                            <div class="mt-2 sm:hidden">
+    // Generar cards para móvil
+    if (cardsContainer) {
+        cardsContainer.innerHTML = sortedProducts.map(product => {
+            const badgeClass = getBadgeClassNew(product.recomendacion);
+            const condicionBadge = getCondicionBadge(product.condicion || 'Desconocido');
+            const precioVsPromedio = product.precio_vs_promedio || '0%';
+            const precioVsClass = precioVsPromedio.startsWith('-') ? 'text-green-600' : 'text-red-600';
+            const categoriaIcon = getCategoriaIcon(product.categoria || 'Diferente');
+            
+            return `
+                <div class="bg-white border-2 ${badgeClass.includes('green') ? 'border-green-300' : badgeClass.includes('blue') ? 'border-blue-300' : 'border-gray-300'} rounded-2xl p-4 shadow-lg hover:shadow-xl transition-shadow">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br ${getStoreColor(product.tienda)} flex items-center justify-center text-white font-bold shadow-md">
+                                ${getStoreInitials(product.tienda)}
+                            </div>
+                            <div>
+                                <p class="font-bold text-gray-800">${product.tienda}</p>
                                 ${condicionBadge}
                             </div>
                         </div>
+                        <span class="${categoriaIcon === '🎯' ? 'text-2xl' : 'text-xl'}">${categoriaIcon}</span>
                     </div>
-                </td>
-                <td class="px-4 sm:px-6 py-4 text-center hidden sm:table-cell">
-                    ${condicionBadge}
-                </td>
-                <td class="px-4 sm:px-6 py-4 text-center">
-                    <div class="flex flex-col items-center">
-                        <span class="text-xl sm:text-2xl font-bold text-indigo-600">$${product.precio.toFixed(2)}</span>
-                        <!-- Mostrar vs promedio en móvil -->
-                        <span class="text-xs font-semibold ${precioVsClass} lg:hidden mt-1">${precioVsPromedio}</span>
+                    
+                    <h3 class="font-semibold text-gray-900 text-base leading-snug mb-2">
+                        ${product.nombre_normalizado || product.nombre_crudo}
+                    </h3>
+                    
+                    <div class="flex items-center justify-between mb-3">
+                        <div>
+                            <p class="text-3xl font-bold text-indigo-600">$${product.precio.toFixed(2)}</p>
+                            <p class="text-sm font-semibold ${precioVsClass}">${precioVsPromedio} vs promedio</p>
+                        </div>
                     </div>
-                </td>
-                <td class="px-4 sm:px-6 py-4 text-center hidden lg:table-cell">
-                    <span class="font-semibold ${precioVsClass} text-sm">${precioVsPromedio}</span>
-                </td>
-                <td class="px-4 sm:px-6 py-4 text-center hidden lg:table-cell">
-                    ${valorBar}
-                </td>
-                <td class="px-4 sm:px-6 py-4 text-center hidden md:table-cell">
-                    <span class="px-3 py-1 rounded-full text-xs font-semibold ${badgeClass} block mb-2 whitespace-nowrap">
-                        ${product.recomendacion}
-                    </span>
-                    <p class="text-xs text-gray-600 line-clamp-2">${product.razon || ''}</p>
-                </td>
-                <td class="px-4 sm:px-6 py-4 text-center">
+                    
+                    <div class="bg-gray-50 rounded-xl p-3 mb-3">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-semibold text-gray-600">Recomendación:</span>
+                            <span class="px-3 py-1 rounded-full text-xs font-bold ${badgeClass}">
+                                ${product.recomendacion}
+                            </span>
+                        </div>
+                        <p class="text-xs text-gray-700">${product.razon || 'Sin análisis'}</p>
+                    </div>
+                    
                     <a href="${product.url}" target="_blank" rel="noopener noreferrer"
-                       class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-xs sm:text-sm font-semibold transition-all shadow-md hover:shadow-lg inline-flex items-center justify-center space-x-2 whitespace-nowrap">
-                        <i class="fas fa-external-link-alt"></i>
-                        <span class="hidden sm:inline">Ver Oferta</span>
-                        <span class="sm:hidden">Ver</span>
+                       class="block w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-center py-3 rounded-xl font-bold shadow-md hover:shadow-lg transition-all">
+                        <i class="fas fa-external-link-alt mr-2"></i>
+                        Ver Oferta en ${product.tienda.split('.')[0]}
                     </a>
-                    <!-- Mostrar badge en móvil -->
-                    <div class="mt-2 md:hidden">
-                        <span class="px-2 py-1 rounded-full text-xs font-semibold ${badgeClass} inline-block">
+                </div>
+            `;
+        }).join('');
+    }
+    
+    // Tabla para desktop (solo se genera en desktop)
+    if (tableBody) {
+        tableBody.innerHTML = sortedProducts.map(product => {
+            const badgeClass = getBadgeClassNew(product.recomendacion);
+            const condicionBadge = getCondicionBadge(product.condicion || 'Desconocido');
+            const valorBar = getValorBar(product.valor_score || 50);
+            const precioVsPromedio = product.precio_vs_promedio || '0%';
+            const precioVsClass = precioVsPromedio.startsWith('-') ? 'text-green-600' : 'text-red-600';
+            const categoriaIcon = getCategoriaIcon(product.categoria || 'Diferente');
+            
+            return `
+                <tr class="border-b hover:bg-indigo-50 transition-colors">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-gradient-to-br ${getStoreColor(product.tienda)} flex items-center justify-center text-white font-bold text-sm shadow">
+                                ${getStoreInitials(product.tienda)}
+                            </div>
+                            <span class="font-semibold text-gray-800">${product.tienda}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4" style="max-width: 400px;">
+                        <div class="flex items-start gap-2">
+                            <span class="text-xl flex-shrink-0" title="${product.categoria}">${categoriaIcon}</span>
+                            <div class="flex-1 min-w-0">
+                                <p class="font-semibold text-gray-900 text-base leading-tight mb-1" 
+                                   title="${product.nombre_crudo}">
+                                    ${product.nombre_normalizado || product.nombre_crudo}
+                                </p>
+                                <p class="text-xs text-gray-600 leading-tight">
+                                    ${product.nombre_crudo.length > 120 ? product.nombre_crudo.substring(0, 120) + '...' : product.nombre_crudo}
+                                </p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        ${condicionBadge}
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <div class="flex flex-col items-center">
+                            <span class="text-2xl font-bold text-indigo-600">$${product.precio.toFixed(2)}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="font-bold ${precioVsClass} text-base">${precioVsPromedio}</span>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        ${valorBar}
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="px-3 py-1 rounded-full text-xs font-bold ${badgeClass} block mb-2 whitespace-nowrap">
                             ${product.recomendacion}
                         </span>
-                    </div>
-                </td>
-            </tr>
-        `;
-    }).join('');
+                        <p class="text-xs text-gray-600 leading-tight">${product.razon || ''}</p>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <a href="${product.url}" target="_blank" rel="noopener noreferrer"
+                           class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl font-bold shadow-md hover:shadow-lg transition-all inline-flex items-center gap-2">
+                            <i class="fas fa-external-link-alt"></i>
+                            <span>Ver Oferta</span>
+                        </a>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
 }
 
 // Crear gráfico de precios
