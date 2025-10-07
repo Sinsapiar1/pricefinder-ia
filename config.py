@@ -30,8 +30,8 @@ class Config:
     ]
     
     # Límites de búsqueda (optimizado para Vercel)
-    MAX_RESULTS_PER_SITE = 3
-    REQUEST_TIMEOUT = 8  # Vercel tiene timeout de 10s en plan gratuito
+    MAX_RESULTS_PER_SITE = 2  # Reducido para ser más rápido
+    REQUEST_TIMEOUT = 15  # Aumentado pero razonable
 
 class ProductionConfig(Config):
     """Configuración para producción"""

@@ -81,29 +81,43 @@ def search_products():
         
         # Paso 1: Realizar scraping
         print("\n🔍 Iniciando scraping...")
-        raw_products = scraper.search_products(product_name)
+        try:
+            raw_products = scraper.search_products(product_name)
+            print(f"✓ Scraping completado: {len(raw_products)} productos encontrados")
+        except Exception as scraper_error:
+            print(f"✗ Error en scraping: {str(scraper_error)}")
+            return jsonify({
+                'success': False,
+                'error': f'Error al hacer scraping: {str(scraper_error)}. Verifica tu Scraper API key.'
+            }), 500
         
         if not raw_products:
             print("⚠ No se encontraron productos")
             return jsonify({
                 'success': False,
-                'error': 'No se encontraron productos. Verifica tu API key de scraping o intenta con otro término de búsqueda.'
+                'error': 'No se encontraron productos. Posibles causas: API key de ScraperAPI incorrecta, límite de requests alcanzado, o el producto no existe en las tiendas.'
             }), 404
-        
-        print(f"✓ Scraping completado: {len(raw_products)} productos encontrados")
         
         # Paso 2: Analizar con Gemini
         print("\n🤖 Iniciando análisis con Gemini...")
-        analysis_result = analyzer.analyze_products(raw_products, product_name)
-        
-        if not analysis_result:
-            print("✗ Error en el análisis de Gemini")
+        try:
+            analysis_result = analyzer.analyze_products(raw_products, product_name)
+            print("✓ Análisis completado exitosamente")
+        except Exception as gemini_error:
+            print(f"✗ Error en Gemini: {str(gemini_error)}")
+            import traceback
+            traceback.print_exc()
             return jsonify({
                 'success': False,
-                'error': 'Error al analizar los productos con Gemini. Verifica tu API key.'
+                'error': f'Error al analizar con Gemini: {str(gemini_error)}. Verifica tu Gemini API key en https://aistudio.google.com/'
             }), 500
         
-        print("✓ Análisis completado exitosamente")
+        if not analysis_result:
+            print("✗ Gemini devolvió resultado vacío")
+            return jsonify({
+                'success': False,
+                'error': 'Gemini no pudo analizar los productos. Intenta nuevamente.'
+            }), 500
         
         # Paso 3: Devolver resultados
         print("\n📊 Preparando respuesta...")

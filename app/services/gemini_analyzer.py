@@ -59,15 +59,17 @@ class GeminiAnalyzer:
         try:
             # Llamar a Gemini
             print("🤖 Enviando prompt a Gemini...")
+            print(f"   Productos a analizar: {len(raw_products)}")
             
-            # Configuración para mejor compatibilidad con cuenta gratuita
+            # Configuración para mejor compatibilidad
             generation_config = {
                 'temperature': 0.7,
                 'top_p': 0.8,
                 'top_k': 40,
-                'max_output_tokens': 2048,  # Limitar tokens para cuenta gratuita
+                'max_output_tokens': 2048,
             }
             
+            print("   Generando contenido...")
             response = self.model.generate_content(
                 prompt,
                 generation_config=generation_config
@@ -75,14 +77,25 @@ class GeminiAnalyzer:
             
             print(f"✓ Respuesta recibida de Gemini")
             
+            # Verificar si hay respuesta
+            if not response or not hasattr(response, 'text'):
+                print("✗ Gemini no devolvió respuesta válida")
+                raise Exception("Gemini no devolvió respuesta válida. Verifica tu API key.")
+            
             # Extraer el JSON de la respuesta
+            print("   Parseando respuesta JSON...")
             analysis = self._parse_gemini_response(response.text)
             
-            if not analysis or not analysis.get('products'):
-                print("⚠ No se pudieron parsear productos de la respuesta")
-                return None
+            if not analysis:
+                print("✗ No se pudo parsear la respuesta de Gemini")
+                raise Exception("No se pudo parsear la respuesta de Gemini")
+            
+            if not analysis.get('products'):
+                print("✗ La respuesta de Gemini no contiene productos")
+                raise Exception("La respuesta de Gemini no contiene productos")
             
             # Calcular estadísticas
+            print("   Calculando estadísticas...")
             statistics = self._calculate_statistics(analysis.get('products', []))
             analysis['statistics'] = statistics
             
@@ -93,7 +106,7 @@ class GeminiAnalyzer:
             print(f"✗ Error al analizar con Gemini: {str(e)}")
             import traceback
             print(traceback.format_exc())
-            return None
+            raise  # Re-raise para que el caller maneje el error
     
     def _build_analysis_prompt(self, products, product_name):
         """Construye el prompt MEJORADO para análisis inteligente con Gemini"""
