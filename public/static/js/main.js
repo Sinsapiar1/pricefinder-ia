@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     searchForm.addEventListener('submit', handleSearch);
 });
 
-// Función principal para manejar la búsqueda
+// Función principal para manejar la búsqueda (MEJORADA)
 async function handleSearch(event) {
     event.preventDefault();
     
@@ -15,8 +15,9 @@ async function handleSearch(event) {
     hideResults();
     hideError();
     
-    // Mostrar spinner
+    // Mostrar spinner con progreso
     showLoading();
+    updateProgress(10, 'Validando API keys...');
     
     // Obtener datos del formulario
     const formData = {
@@ -26,6 +27,8 @@ async function handleSearch(event) {
     };
     
     try {
+        updateProgress(20, 'Conectando con tiendas en línea...');
+        
         // Realizar petición al backend
         const response = await fetch('/api/search', {
             method: 'POST',
@@ -35,20 +38,46 @@ async function handleSearch(event) {
             body: JSON.stringify(formData)
         });
         
+        updateProgress(60, 'Analizando productos con IA...');
+        
         const result = await response.json();
+        
+        updateProgress(90, 'Generando recomendaciones...');
         
         hideLoading();
         
         if (result.success) {
+            updateProgress(100, 'Completado!');
             displayResults(result.data);
+            
+            // Scroll suave al resultado
+            setTimeout(() => {
+                document.getElementById('resultsSection').scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                });
+            }, 300);
         } else {
-            showError(result.error || 'Error desconocido');
+            showError(result.error || 'Error desconocido. Por favor intenta de nuevo.');
         }
         
     } catch (error) {
         hideLoading();
-        showError('Error de conexión con el servidor. Verifica que el servidor esté corriendo.');
+        showError('Error de conexión con el servidor. Por favor verifica tu conexión a internet e intenta nuevamente.');
         console.error('Error:', error);
+    }
+}
+
+// Función para actualizar el progreso
+function updateProgress(percentage, status) {
+    const progressBar = document.getElementById('progressBar');
+    const loadingStatus = document.getElementById('loadingStatus');
+    
+    if (progressBar) {
+        progressBar.style.width = percentage + '%';
+    }
+    if (loadingStatus) {
+        loadingStatus.textContent = status;
     }
 }
 
@@ -174,43 +203,63 @@ function displayProductsTable(products) {
             : 'N/A';
         
         return `
-            <tr class="border-b hover:bg-gray-50 transition">
-                <td class="px-6 py-4">
-                    <span class="font-semibold text-gray-800">${product.tienda}</span>
+            <tr class="border-b hover:bg-indigo-50 transition-colors">
+                <td class="px-4 sm:px-6 py-4">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br ${getStoreColor(product.tienda)} flex items-center justify-center text-white font-bold text-sm mr-2">
+                            ${getStoreInitials(product.tienda)}
+                        </div>
+                        <span class="font-semibold text-gray-800 text-sm sm:text-base hidden sm:inline">${product.tienda}</span>
+                    </div>
                 </td>
-                <td class="px-6 py-4">
+                <td class="px-4 sm:px-6 py-4">
                     <div class="flex items-start">
-                        <span class="text-xl mr-2" title="${product.categoria}">${categoriaIcon}</span>
-                        <div>
-                            <p class="font-medium text-gray-900">${product.nombre_normalizado || product.nombre_crudo}</p>
-                            <p class="text-xs text-gray-500 mt-1" title="${especsTooltip}">${product.nombre_crudo}</p>
+                        <span class="text-lg sm:text-xl mr-2 flex-shrink-0" title="${product.categoria}">${categoriaIcon}</span>
+                        <div class="min-w-0">
+                            <p class="font-medium text-gray-900 text-sm sm:text-base line-clamp-2">${product.nombre_normalizado || product.nombre_crudo}</p>
+                            <p class="text-xs text-gray-500 mt-1 line-clamp-1" title="${especsTooltip}">${product.nombre_crudo}</p>
+                            <!-- Mostrar condición en móvil -->
+                            <div class="mt-2 sm:hidden">
+                                ${condicionBadge}
+                            </div>
                         </div>
                     </div>
                 </td>
-                <td class="px-6 py-4 text-center">
+                <td class="px-4 sm:px-6 py-4 text-center hidden sm:table-cell">
                     ${condicionBadge}
                 </td>
-                <td class="px-6 py-4 text-center">
-                    <span class="text-2xl font-bold text-indigo-600">$${product.precio.toFixed(2)}</span>
+                <td class="px-4 sm:px-6 py-4 text-center">
+                    <div class="flex flex-col items-center">
+                        <span class="text-xl sm:text-2xl font-bold text-indigo-600">$${product.precio.toFixed(2)}</span>
+                        <!-- Mostrar vs promedio en móvil -->
+                        <span class="text-xs font-semibold ${precioVsClass} lg:hidden mt-1">${precioVsPromedio}</span>
+                    </div>
                 </td>
-                <td class="px-6 py-4 text-center">
-                    <span class="font-semibold ${precioVsClass}">${precioVsPromedio}</span>
+                <td class="px-4 sm:px-6 py-4 text-center hidden lg:table-cell">
+                    <span class="font-semibold ${precioVsClass} text-sm">${precioVsPromedio}</span>
                 </td>
-                <td class="px-6 py-4 text-center">
+                <td class="px-4 sm:px-6 py-4 text-center hidden lg:table-cell">
                     ${valorBar}
                 </td>
-                <td class="px-6 py-4 text-center">
-                    <span class="px-3 py-1 rounded-full text-xs font-semibold ${badgeClass} block mb-2">
+                <td class="px-4 sm:px-6 py-4 text-center hidden md:table-cell">
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold ${badgeClass} block mb-2 whitespace-nowrap">
                         ${product.recomendacion}
                     </span>
-                    <p class="text-xs text-gray-600">${product.razon || ''}</p>
+                    <p class="text-xs text-gray-600 line-clamp-2">${product.razon || ''}</p>
                 </td>
-                <td class="px-6 py-4 text-center">
-                    <a href="${product.url}" target="_blank" 
-                       class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition inline-flex items-center space-x-2">
+                <td class="px-4 sm:px-6 py-4 text-center">
+                    <a href="${product.url}" target="_blank" rel="noopener noreferrer"
+                       class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-xs sm:text-sm font-semibold transition-all shadow-md hover:shadow-lg inline-flex items-center justify-center space-x-2 whitespace-nowrap">
                         <i class="fas fa-external-link-alt"></i>
-                        <span>Ver Oferta</span>
+                        <span class="hidden sm:inline">Ver Oferta</span>
+                        <span class="sm:hidden">Ver</span>
                     </a>
+                    <!-- Mostrar badge en móvil -->
+                    <div class="mt-2 md:hidden">
+                        <span class="px-2 py-1 rounded-full text-xs font-semibold ${badgeClass} inline-block">
+                            ${product.recomendacion}
+                        </span>
+                    </div>
                 </td>
             </tr>
         `;
@@ -367,6 +416,29 @@ function getCategoriaIcon(categoria) {
         'Diferente': '❓'
     };
     return icons[categoria] || '📦';
+}
+
+// Funciones para logos de tiendas
+function getStoreColor(tienda) {
+    const colors = {
+        'amazon.com': 'from-orange-500 to-yellow-600',
+        'bestbuy.com': 'from-blue-500 to-blue-700',
+        'walmart.com': 'from-blue-600 to-blue-800',
+        'ebay.com': 'from-red-500 to-yellow-500',
+        'target.com': 'from-red-600 to-red-700'
+    };
+    return colors[tienda.toLowerCase()] || 'from-gray-500 to-gray-700';
+}
+
+function getStoreInitials(tienda) {
+    const initials = {
+        'amazon.com': 'AZ',
+        'bestbuy.com': 'BB',
+        'walmart.com': 'WM',
+        'ebay.com': 'EB',
+        'target.com': 'TG'
+    };
+    return initials[tienda.toLowerCase()] || tienda.substring(0, 2).toUpperCase();
 }
 
 // Funciones de UI
