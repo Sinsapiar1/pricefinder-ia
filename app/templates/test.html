@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Scraper - PriceFinder IA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">🧪 Test de Scraper por Tienda</h1>
+        
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4">Configuración</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block font-semibold mb-2">Scraper API Key:</label>
+                    <input type="password" id="scraperKey" 
+                           class="w-full border-2 border-gray-300 rounded p-2"
+                           placeholder="Tu Scraper API Key">
+                </div>
+                <div>
+                    <label class="block font-semibold mb-2">Producto:</label>
+                    <input type="text" id="productName" 
+                           class="w-full border-2 border-gray-300 rounded p-2"
+                           value="iPhone 15">
+                </div>
+                <button onclick="testScrapers()" 
+                        class="bg-indigo-600 text-white px-6 py-3 rounded font-bold hover:bg-indigo-700">
+                    Probar Todas las Tiendas
+                </button>
+            </div>
+        </div>
+        
+        <div id="results" class="space-y-4">
+            <!-- Results will appear here -->
+        </div>
+    </div>
+    
+    <script>
+        async function testScrapers() {
+            const scraperKey = document.getElementById('scraperKey').value;
+            const productName = document.getElementById('productName').value;
+            const resultsDiv = document.getElementById('results');
+            
+            resultsDiv.innerHTML = '<div class="bg-blue-50 p-4 rounded">⏳ Probando todas las tiendas...</div>';
+            
+            try {
+                const response = await fetch('/api/test', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        scraper_api_key: scraperKey,
+                        product_name: productName
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const summary = data.summary;
+                    const results = data.test_results;
+                    
+                    let html = '<div class="bg-green-50 border-2 border-green-300 p-4 rounded mb-4">';
+                    html += '<h3 class="font-bold text-xl mb-2">📊 Resumen:</h3>';
+                    html += `<p>Amazon: <strong>${summary.amazon}</strong> productos</p>`;
+                    html += `<p>eBay: <strong>${summary.ebay}</strong> productos</p>`;
+                    html += `<p>Walmart: <strong>${summary.walmart}</strong> productos</p>`;
+                    html += `<p>BestBuy: <strong>${summary.bestbuy}</strong> productos</p>`;
+                    html += '</div>';
+                    
+                    // Detalles por tienda
+                    for (const [store, result] of Object.entries(results)) {
+                        const color = result.products_found > 0 ? 'green' : 'red';
+                        html += `<div class="bg-white rounded-lg shadow p-4 border-2 border-${color}-300">`;
+                        html += `<h3 class="font-bold text-lg mb-2">${store}</h3>`;
+                        html += `<p class="mb-2">Status: <span class="font-semibold">${result.status}</span></p>`;
+                        html += `<p class="mb-2">Productos encontrados: <span class="font-bold text-2xl">${result.products_found}</span></p>`;
+                        
+                        if (result.products && result.products.length > 0) {
+                            html += '<div class="mt-4 space-y-2">';
+                            result.products.forEach(p => {
+                                html += `<div class="bg-gray-50 p-3 rounded">`;
+                                html += `<p class="font-semibold">${p.nombre_crudo}</p>`;
+                                html += `<p class="text-green-600 font-bold">$${p.precio}</p>`;
+                                html += `<p class="text-xs text-gray-600">${p.url}</p>`;
+                                html += `</div>`;
+                            });
+                            html += '</div>';
+                        }
+                        
+                        if (result.error) {
+                            html += `<p class="text-red-600 text-sm mt-2">Error: ${result.error}</p>`;
+                        }
+                        
+                        html += '</div>';
+                    }
+                    
+                    resultsDiv.innerHTML = html;
+                } else {
+                    resultsDiv.innerHTML = `<div class="bg-red-50 p-4 rounded border-2 border-red-300">
+                        <p class="font-bold">Error:</p>
+                        <p>${data.error}</p>
+                        ${data.traceback ? `<pre class="text-xs mt-2 overflow-auto">${data.traceback}</pre>` : ''}
+                    </div>`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="bg-red-50 p-4 rounded">Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -11,6 +11,11 @@ def index():
     """Renderiza la página principal"""
     return render_template('index.html')
 
+@main_bp.route('/test')
+def test_page():
+    """Página de testing para verificar scraping por tienda"""
+    return render_template('test.html')
+
 @main_bp.route('/api/search', methods=['POST'])
 def search_products():
     """Endpoint principal para buscar productos"""
@@ -155,39 +160,58 @@ def health_check():
 
 @main_bp.route('/api/test', methods=['POST'])
 def test_apis():
-    """Endpoint para probar las API keys sin hacer scraping completo"""
+    """Endpoint para probar scraping de cada tienda individualmente"""
     try:
         data = request.get_json()
-        gemini_key = data.get('gemini_api_key', '').strip()
         scraper_key = data.get('scraper_api_key', '').strip()
+        product_name = data.get('product_name', 'iPhone 15').strip()
         
-        results = {
-            'gemini': 'not_tested',
-            'scraper': 'not_tested'
-        }
+        if not scraper_key:
+            return jsonify({
+                'success': False,
+                'error': 'Se requiere Scraper API Key'
+            }), 400
         
-        # Probar Gemini
-        if gemini_key:
+        from app.services.scraper import ProductScraper
+        scraper = ProductScraper(scraper_key)
+        
+        # Probar cada tienda individualmente
+        results = {}
+        for site in ['amazon.com', 'ebay.com', 'walmart.com', 'bestbuy.com']:
+            print(f"\n🧪 TESTING {site}...")
             try:
-                from app.services.gemini_analyzer import GeminiAnalyzer
-                analyzer = GeminiAnalyzer(gemini_key)
-                results['gemini'] = 'valid'
+                products = scraper._search_site(site, product_name)
+                results[site] = {
+                    'status': 'success',
+                    'products_found': len(products),
+                    'products': products[:2] if products else []  # Solo primeros 2 para preview
+                }
+                print(f"✓ {site}: {len(products)} productos")
             except Exception as e:
-                results['gemini'] = f'error: {str(e)}'
-        
-        # Probar Scraper (sin hacer request real)
-        if scraper_key:
-            results['scraper'] = 'provided' if len(scraper_key) > 10 else 'invalid_length'
+                results[site] = {
+                    'status': 'error',
+                    'error': str(e)[:200],
+                    'products_found': 0
+                }
+                print(f"✗ {site}: {str(e)[:100]}")
         
         return jsonify({
             'success': True,
-            'results': results
+            'test_results': results,
+            'summary': {
+                'amazon': results.get('amazon.com', {}).get('products_found', 0),
+                'ebay': results.get('ebay.com', {}).get('products_found', 0),
+                'walmart': results.get('walmart.com', {}).get('products_found', 0),
+                'bestbuy': results.get('bestbuy.com', {}).get('products_found', 0)
+            }
         })
         
     except Exception as e:
+        import traceback
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': str(e),
+            'traceback': traceback.format_exc()
         }), 500
 
 @main_bp.route('/static/<path:filename>')
