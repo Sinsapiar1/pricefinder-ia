@@ -50,15 +50,21 @@ class ProductScraper:
         
         try:
             response = requests.get(scraper_url, timeout=self.timeout)
+            print(f"    Response status: {response.status_code}")
+            
             if response.status_code == 200:
                 soup = BeautifulSoup(response.content, 'html5lib')
                 
                 if 'amazon.com' in site:
                     products = self._parse_amazon(soup, site)
+                    print(f"    Amazon parseado: {len(products)} productos")
                 elif 'bestbuy.com' in site:
                     products = self._parse_bestbuy(soup, site)
+                    print(f"    BestBuy parseado: {len(products)} productos")
+            else:
+                print(f"    ⚠ Status code no exitoso: {response.status_code}")
         except Exception as e:
-            print(f"    Error: {str(e)}")
+            print(f"    ✗ Error en scraping: {str(e)[:100]}")
         
         return products[:self.max_results]
     
@@ -85,16 +91,33 @@ class ProductScraper:
                     continue
                 
                 try:
-                    price_text = price_whole.text.replace(',', '').replace('.', '')
+                    # Extraer precio correctamente (ej: $1,299.99 → 1299.99)
+                    price_text = price_whole.text.replace(',', '')
+                    # Eliminar todo excepto números y punto decimal
+                    price_text = ''.join(c for c in price_text if c.isdigit() or c == '.')
                     price = float(price_text)
                 except:
                     continue
                 
+                # Construir URL completa y válida
                 href = link_elem['href']
                 if href.startswith('/'):
-                    product_url = f"https://www.amazon.com{href.split('?')[0]}"
+                    # Link relativo: /dp/B08N5WRWNW/ref=...
+                    product_url = f"https://www.amazon.com{href}"
+                elif href.startswith('http'):
+                    # Link absoluto completo
+                    product_url = href
                 else:
-                    product_url = href.split('?')[0]
+                    # Otro caso: agregar dominio
+                    product_url = f"https://www.amazon.com/{href}"
+                
+                # Limpiar parámetros innecesarios pero mantener /dp/ o /gp/
+                if '/dp/' in product_url or '/gp/' in product_url:
+                    # Link válido de producto
+                    pass
+                else:
+                    # Si no tiene /dp/ o /gp/, mantener todo
+                    pass
                 
                 rating_elem = item.find('span', class_='a-icon-alt')
                 reviews = 4.0
@@ -118,33 +141,61 @@ class ProductScraper:
     
     def _parse_bestbuy(self, soup, site):
         products = []
+        
+        # Intentar múltiples selectores (Best Buy cambia su HTML frecuentemente)
         items = soup.find_all('li', class_='sku-item')
+        if not items:
+            items = soup.find_all('div', class_='sku-item')
+        if not items:
+            items = soup.find_all('div', {'data-sku-id': True})
+        
+        print(f"    BestBuy: Encontrados {len(items)} items en HTML")
         
         for item in items[:self.max_results]:
             try:
+                # Buscar nombre del producto con múltiples selectores
                 name_elem = item.find('h4', class_='sku-title')
+                if not name_elem:
+                    name_elem = item.find('h4')
+                if not name_elem:
+                    name_elem = item.find('a', class_='v-fw-medium')
                 if not name_elem:
                     continue
                 
+                # Buscar precio con múltiples selectores
                 price_elem = item.find('span', {'aria-hidden': 'true'})
+                if not price_elem:
+                    price_elem = item.find('span', class_='priceView-customer-price')
+                if not price_elem:
+                    price_elem = item.find('span', class_='priceView-hero-price')
                 if not price_elem:
                     continue
                 
+                # Buscar link
                 link_elem = item.find('a', href=True)
                 if not link_elem:
                     continue
                 
                 try:
+                    # Extraer precio (ej: $1,299.99 → 1299.99)
                     price_text = price_elem.text.replace('$', '').replace(',', '').strip()
-                    price = float(re.search(r'(\d+\.?\d*)', price_text).group(1))
+                    # Buscar el primer número con o sin decimales
+                    match = re.search(r'(\d+\.?\d*)', price_text)
+                    if match:
+                        price = float(match.group(1))
+                    else:
+                        continue
                 except:
                     continue
                 
+                # Construir URL completa
                 href = link_elem['href']
                 if href.startswith('/'):
-                    product_url = f"https://www.bestbuy.com{href.split('?')[0]}"
+                    product_url = f"https://www.bestbuy.com{href}"
+                elif href.startswith('http'):
+                    product_url = href
                 else:
-                    product_url = href.split('?')[0]
+                    product_url = f"https://www.bestbuy.com/{href}"
                 
                 products.append({
                     'tienda': site,
@@ -153,7 +204,9 @@ class ProductScraper:
                     'url': product_url,
                     'reviews': 4.0
                 })
-            except:
+                print(f"    ✓ BestBuy producto añadido: {name_elem.text.strip()[:50]}... - ${price}")
+            except Exception as e:
+                print(f"    ⚠ Error parseando item de BestBuy: {str(e)[:50]}")
                 continue
         
         return products
