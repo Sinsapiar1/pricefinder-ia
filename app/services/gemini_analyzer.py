@@ -9,35 +9,31 @@ class GeminiAnalyzer:
         try:
             genai.configure(api_key=api_key)
             
-            # Usar modelos disponibles en v0.7.2 con API v1
-            models_to_try = [
-                'models/gemini-1.5-flash',      # Modelo moderno y rápido
-                'models/gemini-1.5-pro',        # Alternativa más potente
-                'models/gemini-pro',            # Fallback clásico
-            ]
+            # Usar el modelo más simple y compatible - SIN prefijos
+            # Este modelo funciona en TODAS las versiones de la API
+            model_name = 'gemini-1.5-flash'
             
-            model_created = False
-            last_error = None
-            
-            for model_name in models_to_try:
-                try:
-                    self.model = genai.GenerativeModel(model_name)
-                    print(f"✓ Gemini configurado exitosamente: {model_name}")
-                    model_created = True
-                    break
-                except Exception as e:
-                    last_error = str(e)
-                    print(f"⚠ Modelo {model_name} no disponible: {last_error}")
-                    continue
-            
-            if not model_created:
-                raise Exception(f"No se pudo inicializar ningún modelo. Último error: {last_error}")
+            try:
+                self.model = genai.GenerativeModel(model_name)
+                print(f"✓ Gemini configurado exitosamente con: {model_name}")
+            except Exception as e:
+                # Fallback al modelo clásico si falla
+                print(f"⚠ {model_name} no disponible, intentando gemini-pro...")
+                model_name = 'gemini-pro'
+                self.model = genai.GenerativeModel(model_name)
+                print(f"✓ Gemini configurado con fallback: {model_name}")
                     
         except Exception as e:
-            print(f"✗ Error al configurar Gemini: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            raise
+            error_msg = str(e)
+            print(f"✗ Error al configurar Gemini: {error_msg}")
+            
+            # Mensaje de ayuda específico
+            if 'API key' in error_msg or 'invalid' in error_msg.lower():
+                raise Exception("API key de Gemini inválida. Genera una nueva en https://aistudio.google.com/app/apikey")
+            elif 'not found' in error_msg.lower():
+                raise Exception("Modelo no disponible. Tu API key de Gemini puede no tener acceso. Intenta generar una nueva key.")
+            else:
+                raise Exception(f"Error al inicializar Gemini: {error_msg}")
     
     def analyze_products(self, raw_products, product_name):
         """
@@ -109,60 +105,50 @@ class GeminiAnalyzer:
             raise  # Re-raise para que el caller maneje el error
     
     def _build_analysis_prompt(self, products, product_name):
-        """Construye el prompt MEJORADO para análisis inteligente con Gemini"""
+        """Construye un prompt SIMPLE y EFECTIVO para Gemini"""
         
-        prompt = f"""Eres un experto analista de productos y precios. Analiza estos productos con INTELIGENCIA PROFUNDA.
+        # Prompt más corto y directo para mejor rendimiento
+        prompt = f"""Analiza estos productos y devuelve SOLO JSON válido (sin texto extra):
 
-🎯 PRODUCTO BUSCADO: {product_name}
+PRODUCTO BUSCADO: {product_name}
 
-📦 PRODUCTOS ENCONTRADOS:
+PRODUCTOS:
 {json.dumps(products, indent=2, ensure_ascii=False)}
 
-🧠 ANÁLISIS REQUERIDO:
-1. Identifica productos IDÉNTICOS (mismo modelo/versión)
-2. Detecta productos SIMILARES (alternativas válidas)
-3. Identifica especificaciones clave en los nombres
-4. Detecta condición: nuevo, reacondicionado, usado
-5. Calcula valor real (precio/características)
-6. Identifica ofertas excepcionales o precios sospechosos
-
-📊 DEVOLVER JSON (sin texto adicional):
+DEVUELVE JSON con esta estructura exacta:
 {{
-  "summary": "Análisis inteligente: [insight principal]. Encontrados [N] productos idénticos y [M] alternativas. [Recomendación específica con % de ahorro]",
+  "summary": "Resumen con recomendación principal y % de ahorro",
   "insights": [
-    "Insight 1: [Observación inteligente]",
-    "Insight 2: [Comparación de valor]",
-    "Insight 3: [Advertencia o recomendación]"
+    "Observación 1 sobre precios",
+    "Observación 2 sobre valor",
+    "Observación 3 sobre recomendación"
   ],
   "products": [
     {{
-      "tienda": "nombre_tienda",
-      "nombre_normalizado": "Nombre estandarizado del producto",
-      "nombre_crudo": "nombre original",
-      "precio": 0.00,
-      "url": "url",
-      "reviews": 0.0,
-      "categoria": "Idéntico|Similar|Alternativa|Diferente",
-      "condicion": "Nuevo|Reacondicionado|Usado|Desconocido",
-      "especificaciones_detectadas": ["spec1", "spec2"],
-      "recomendacion": "🏆 Mejor Opción|✅ Buena Alternativa|⚠️ Considerar|❌ No Recomendado",
-      "razon": "Razón detallada con % de ahorro/sobrecosto",
-      "valor_score": 0-100,
-      "precio_vs_promedio": "+X%|-X%"
+      "tienda": "tienda_original",
+      "nombre_normalizado": "Nombre normalizado",
+      "nombre_crudo": "nombre_original",
+      "precio": precio_numero,
+      "url": "url_original",
+      "reviews": reviews_numero,
+      "categoria": "Idéntico",
+      "condicion": "Nuevo",
+      "especificaciones_detectadas": ["spec1"],
+      "recomendacion": "🏆 Mejor Opción",
+      "razon": "Razón breve",
+      "valor_score": 85,
+      "precio_vs_promedio": "-15%"
     }}
   ]
 }}
 
-🎯 CRITERIOS INTELIGENTES:
-- 🏆 "Mejor Opción": Precio más bajo para producto idéntico O mejor valor precio/calidad
-- ✅ "Buena Alternativa": Precio competitivo, buen valor
-- ⚠️ "Considerar": Precio alto pero puede tener ventajas (garantía, vendedor oficial)
-- ❌ "No Recomendado": Precio excesivo sin justificación o producto claramente inferior
-
-💡 INSIGHTS: Genera 3 observaciones inteligentes sobre:
-- Diferencias de precio entre tiendas para producto idéntico
-- Alternativas que ofrecen mejor valor
-- Advertencias sobre precios anormales o productos engañosos"""
+REGLAS:
+- "🏆 Mejor Opción" = precio más bajo
+- "✅ Buena Alternativa" = precio razonable  
+- "⚠️ Considerar" = precio alto
+- "❌ No Recomendado" = precio excesivo
+- Calcula precio_vs_promedio para cada producto
+- Genera 3 insights útiles"""
         
         return prompt
     
