@@ -61,10 +61,12 @@ class ProductScraper:
             scraper_params['country_code'] = 'us'
             # Amazon funciona perfecto así
         
-        # eBay: Sin render (rápido y barato)
+        # eBay: Configuración especial para mejor compatibilidad
         elif 'ebay' in site:
             scraper_params['country_code'] = 'us'
             scraper_params['keep_headers'] = 'true'
+            # eBay a veces necesita render también
+            scraper_params['render'] = 'false'  # Explícitamente false primero
         
         # Walmart: Necesita render JS + parámetros especiales
         elif 'walmart' in site:
@@ -82,16 +84,19 @@ class ProductScraper:
         scraper_url = 'http://api.scraperapi.com'
         
         try:
-            print(f"    Request URL: {scraper_url}")
-            print(f"    Params: render={scraper_params.get('render', 'false')}, country={scraper_params.get('country_code')}")
+            print(f"    📡 Request URL: {scraper_url}")
+            print(f"    📋 Target: {target_url}")
+            print(f"    ⚙️ Params: {scraper_params}")
             
             response = requests.get(scraper_url, params=scraper_params, timeout=self.timeout)
             print(f"    ✓ Response status: {response.status_code}")
+            print(f"    📦 Content length: {len(response.content)} bytes")
             
             if response.status_code == 200:
-                # Guardar HTML para debug (primeros 500 chars)
-                html_preview = response.text[:500] if hasattr(response, 'text') else str(response.content[:500])
-                print(f"    HTML preview: {html_preview[:100]}...")
+                # Verificar que hay contenido
+                if len(response.content) < 1000:
+                    print(f"    ⚠ Respuesta muy pequeña, probablemente bloqueada")
+                    print(f"    Contenido: {response.text[:500]}")
                 
                 soup = BeautifulSoup(response.content, 'html5lib')
                 
@@ -109,12 +114,27 @@ class ProductScraper:
                     print(f"    ✓ BestBuy parseado: {len(products)} productos")
             else:
                 print(f"    ⚠ Status code no exitoso: {response.status_code}")
-                # Si falla con render, intentar sin render (fallback)
-                if 'render' in scraper_params:
+                
+                # FALLBACK STRATEGY
+                # Si falló, intentar estrategia alternativa
+                if 'ebay' in site and scraper_params.get('render') == 'false':
+                    # eBay falló sin render, intentar CON render
+                    print(f"    → eBay: Reintentando CON render...")
+                    scraper_params['render'] = 'true'
+                    response = requests.get(scraper_url, params=scraper_params, timeout=self.timeout)
+                    if response.status_code == 200:
+                        soup = BeautifulSoup(response.content, 'html5lib')
+                        products = self._parse_ebay(soup, site)
+                        print(f"    ✓ eBay parseado (con render): {len(products)} productos")
+                
+                elif 'render' in scraper_params and scraper_params['render'] == 'true':
+                    # Walmart/BestBuy falló con render, intentar SIN render
                     print(f"    → Reintentando sin render para ahorrar créditos...")
-                    del scraper_params['render']
+                    scraper_params['render'] = 'false'
                     if 'session_number' in scraper_params:
                         del scraper_params['session_number']
+                    if 'wait_for_selector' in scraper_params:
+                        del scraper_params['wait_for_selector']
                     
                     response = requests.get(scraper_url, params=scraper_params, timeout=self.timeout)
                     if response.status_code == 200:
@@ -349,32 +369,60 @@ class ProductScraper:
         return products
     
     def _parse_ebay(self, soup, site):
-        """Parser REAL para eBay.com"""
+        """Parser REAL para eBay.com - MEJORADO con múltiples selectores"""
         products = []
         
-        # eBay usa estructura más simple
+        # eBay tiene varias estructuras dependiendo de la vista
         items = soup.find_all('li', class_='s-item')
         if not items:
             items = soup.find_all('div', class_='s-item')
+        if not items:
+            items = soup.find_all('li', class_=re.compile('s-item'))
+        if not items:
+            # Fallback: buscar cualquier item con enlace y precio
+            items = soup.find_all('div', class_=re.compile('item'))
         
         print(f"    eBay: Encontrados {len(items)} items en HTML")
         
-        for item in items[:self.max_results]:
+        # Debug: Ver qué clases hay
+        if items:
+            first_item = items[0] if len(items) > 0 else None
+            if first_item:
+                print(f"    eBay: Primer item classes: {first_item.get('class', [])}")
+        
+        productos_encontrados = 0
+        for idx, item in enumerate(items):
+            if productos_encontrados >= self.max_results:
+                break
+                
             try:
-                # Buscar nombre
+                # Buscar nombre con MÚLTIPLES selectores
                 name_elem = item.find('h3', class_='s-item__title')
                 if not name_elem:
                     name_elem = item.find('div', class_='s-item__title')
                 if not name_elem:
+                    name_elem = item.find('h3')
+                if not name_elem:
+                    name_elem = item.find('span', class_=re.compile('title'))
+                if not name_elem:
+                    print(f"    eBay item {idx}: No se encontró nombre")
                     continue
+                
+                nombre_texto = name_elem.text.strip()
                 
                 # Saltar "Shop on eBay" y otros items especiales
-                if 'shop on ebay' in name_elem.text.lower():
+                if 'shop on ebay' in nombre_texto.lower() or len(nombre_texto) < 10:
+                    print(f"    eBay item {idx}: Item especial, saltando")
                     continue
                 
-                # Buscar precio
+                # Buscar precio con MÚLTIPLES selectores
                 price_elem = item.find('span', class_='s-item__price')
                 if not price_elem:
+                    price_elem = item.find('span', class_=re.compile('price'))
+                if not price_elem:
+                    price_elem = item.find('div', class_=re.compile('price'))
+                if not price_elem:
+                    print(f"    eBay item {idx}: No se encontró precio")
                     continue
                 
                 # Buscar link
@@ -382,11 +430,15 @@ class ProductScraper:
                 if not link_elem:
                     link_elem = item.find('a', href=True)
                 if not link_elem:
+                    print(f"    eBay item {idx}: No se encontró link")
                     continue
                 
                 try:
                     # Extraer precio (puede tener "to" para rangos)
                     price_text = price_elem.text.replace('$', '').replace(',', '').strip()
+                    # Limpiar texto extra
+                    price_text = price_text.replace('USD', '').replace('Free shipping', '').strip()
+                    
                     # Si hay rango (ej: "$100 to $200"), tomar el primero
                     if 'to' in price_text.lower():
                         price_text = price_text.lower().split('to')[0].strip()
@@ -394,9 +446,14 @@ class ProductScraper:
                     match = re.search(r'(\d+\.?\d*)', price_text)
                     if match:
                         price = float(match.group(1))
+                        if price < 1:  # Precio inválido
+                            print(f"    eBay item {idx}: Precio inválido: ${price}")
+                            continue
                     else:
+                        print(f"    eBay item {idx}: No se pudo extraer precio de '{price_text}'")
                         continue
-                except:
+                except Exception as price_error:
+                    print(f"    eBay item {idx}: Error en precio: {str(price_error)[:50]}")
                     continue
                 
                 # URL de eBay
@@ -404,18 +461,22 @@ class ProductScraper:
                 if not product_url.startswith('http'):
                     product_url = f"https://www.ebay.com{product_url}"
                 
+                # Producto válido encontrado
                 products.append({
                     'tienda': site,
-                    'nombre_crudo': name_elem.text.strip(),
+                    'nombre_crudo': nombre_texto,
                     'precio': price,
                     'url': product_url,
                     'reviews': 4.0
                 })
-                print(f"    ✓ eBay producto: {name_elem.text.strip()[:50]}... - ${price}")
+                productos_encontrados += 1
+                print(f"    ✓ eBay producto {productos_encontrados}: {nombre_texto[:50]}... - ${price}")
+                
             except Exception as e:
-                print(f"    ⚠ Error parseando item de eBay: {str(e)[:50]}")
+                print(f"    ⚠ eBay item {idx} error general: {str(e)[:100]}")
                 continue
         
+        print(f"    eBay: Total productos válidos: {len(products)}")
         return products
     
     def _parse_target(self, soup, site):
