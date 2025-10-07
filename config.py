@@ -23,18 +23,15 @@ class Config:
     # Configuración de producción
     TESTING = os.environ.get('TESTING', 'False').lower() == 'true'
     
-    # Sitios para scraping
+    # Sitios para scraping (optimizado para Vercel - solo sitios implementados)
     TARGET_SITES = [
         'amazon.com',
-        'walmart.com',
-        'bestbuy.com',
-        'ebay.com',
-        'target.com'
+        'bestbuy.com'
     ]
     
-    # Límites de búsqueda
-    MAX_RESULTS_PER_SITE = 5
-    REQUEST_TIMEOUT = 30
+    # Límites de búsqueda (optimizado para Vercel)
+    MAX_RESULTS_PER_SITE = 3
+    REQUEST_TIMEOUT = 8  # Vercel tiene timeout de 10s en plan gratuito
 
 class ProductionConfig(Config):
     """Configuración para producción"""
