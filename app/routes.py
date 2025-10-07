@@ -89,6 +89,14 @@ def search_products():
         try:
             raw_products = scraper.search_products(product_name)
             print(f"✓ Scraping completado: {len(raw_products)} productos encontrados")
+            
+            # DEBUG: Ver distribución por tienda
+            from collections import Counter
+            tiendas_count = Counter(p['tienda'] for p in raw_products)
+            print(f"   Distribución por tienda:")
+            for tienda, count in tiendas_count.items():
+                print(f"     - {tienda}: {count} productos")
+                
         except Exception as scraper_error:
             print(f"✗ Error en scraping: {str(scraper_error)}")
             return jsonify({
@@ -130,13 +138,23 @@ def search_products():
         print("✅ Búsqueda completada exitosamente")
         print("="*50 + "\n")
         
+        # Preparar respuesta con TODOS los datos
+        response_data = {
+            'summary': analysis_result.get('summary', ''),
+            'insights': analysis_result.get('insights', []),
+            'products': analysis_result.get('products', []),
+            'statistics': analysis_result.get('statistics', {})
+        }
+        
+        print(f"\n📤 Enviando respuesta al frontend:")
+        print(f"   - Summary: {len(response_data['summary'])} chars")
+        print(f"   - Insights: {len(response_data['insights'])} items")
+        print(f"   - Products: {len(response_data['products'])} items")
+        print(f"   - Tiendas únicas: {set(p['tienda'] for p in response_data['products'])}")
+        
         return jsonify({
             'success': True,
-            'data': {
-                'summary': analysis_result.get('summary', ''),
-                'products': analysis_result.get('products', []),
-                'statistics': analysis_result.get('statistics', {})
-            }
+            'data': response_data
         })
         
     except Exception as e:

@@ -227,7 +227,14 @@ REGLAS:
     
     def _basic_analysis(self, raw_products, product_name):
         """Análisis básico SIN IA - para cuando Gemini no está disponible"""
-        print("📊 Generando análisis básico...")
+        print(f"📊 Generando análisis básico para {len(raw_products)} productos...")
+        
+        # DEBUG: Ver qué productos llegaron
+        from collections import Counter
+        tiendas_raw = Counter(p['tienda'] for p in raw_products)
+        print(f"   Productos por tienda recibidos:")
+        for tienda, count in tiendas_raw.items():
+            print(f"     - {tienda}: {count} productos")
         
         # Calcular estadísticas
         prices = [p['precio'] for p in raw_products]
@@ -285,6 +292,14 @@ REGLAS:
         ]
         
         statistics = self._calculate_statistics(processed_products)
+        
+        # DEBUG: Verificar qué se va a devolver
+        tiendas_processed = Counter(p['tienda'] for p in processed_products)
+        print(f"   Productos procesados por tienda:")
+        for tienda, count in tiendas_processed.items():
+            print(f"     - {tienda}: {count} productos")
+        
+        print(f"✓ Análisis básico completado: {len(processed_products)} productos, {len(insights)} insights")
         
         return {
             'summary': summary,
