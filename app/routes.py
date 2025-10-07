@@ -115,3 +115,11 @@ def health_check():
         'status': 'healthy',
         'message': 'PriceFinder IA está funcionando correctamente'
     })
+
+@main_bp.route('/static/<path:filename>')
+def serve_static(filename):
+    """Servir archivos estáticos (fallback para Vercel)"""
+    from flask import send_from_directory
+    import os
+    static_folder = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'app', 'static')
+    return send_from_directory(static_folder, filename)
