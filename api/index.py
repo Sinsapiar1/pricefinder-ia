@@ -12,7 +12,8 @@ sys.path.insert(0, parent_dir)
 # Importar y crear la aplicación Flask
 from app import create_app
 
+# Crear la aplicación
 app = create_app()
 
-# Este es el punto de entrada para Vercel
-# Vercel automáticamente manejará las requests usando esta variable 'app'
+# Handler para Vercel (WSGI)
+# Vercel detectará automáticamente 'app' como WSGI application

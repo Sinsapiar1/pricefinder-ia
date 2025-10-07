@@ -7,11 +7,16 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
     
-    # Habilitar CORS para permitir peticiones desde el frontend
-    CORS(app, origins=['*'])  # Permitir todos los orígenes para Vercel
+    # Habilitar CORS para Vercel
+    CORS(app, resources={r"/*": {"origins": "*"}})
     
     # Registrar blueprints/rutas
     from app.routes import main_bp
     app.register_blueprint(main_bp)
+    
+    # Debug: Imprimir rutas registradas
+    print("Rutas registradas:")
+    for rule in app.url_map.iter_rules():
+        print(f"  {rule.rule} -> {rule.endpoint}")
     
     return app
