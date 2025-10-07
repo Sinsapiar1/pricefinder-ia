@@ -16,3 +16,14 @@ ENV/
 .DS_Store
 *.log
 node_modules/
+tests/
+*.md
+!README.md
+Dockerfile
+docker-compose.yml
+.git/
+.gitignore
+.dockerignore
+check_gemini_limits.py
+list_available_models.py
+test_gemini.py

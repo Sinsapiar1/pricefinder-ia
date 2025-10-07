@@ -1,16 +1,18 @@
 """
-Vercel serverless function handler for Flask app
+Vercel Serverless Function Handler for Flask App
 """
-import os
 import sys
+import os
 
-# Add the parent directory to Python path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Agregar el directorio raíz al path de Python
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.insert(0, parent_dir)
 
+# Importar y crear la aplicación Flask
 from app import create_app
 
-# Create Flask app
 app = create_app()
 
-# Vercel handler - debe ser 'app' directamente
-# Vercel automáticamente detecta la variable 'app'
+# Este es el punto de entrada para Vercel
+# Vercel automáticamente manejará las requests usando esta variable 'app'

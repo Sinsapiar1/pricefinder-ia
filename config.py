@@ -1,7 +1,11 @@
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
+# Solo cargar dotenv si existe el archivo .env (no en producción)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except:
+    pass
 
 class Config:
     """Configuración base de la aplicación"""
