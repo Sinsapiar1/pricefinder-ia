@@ -179,16 +179,29 @@ def test_apis():
 @main_bp.route('/static/<path:filename>')
 def serve_static(filename):
     """Servir archivos estáticos (fallback para Vercel)"""
-    from flask import send_from_directory
+    from flask import send_from_directory, current_app
     import os
-    # El path correcto es: /workspace/app/static/
-    static_folder = os.path.join(os.path.dirname(__file__), 'static')
-    print(f"Sirviendo archivo estático: {filename} desde {static_folder}")
-    return send_from_directory(static_folder, filename)
+    
+    try:
+        # Usar la configuración de static_folder de Flask
+        static_folder = current_app.static_folder
+        print(f"[STATIC] Sirviendo: {filename} desde {static_folder}")
+        
+        # Verificar que el archivo existe
+        file_path = os.path.join(static_folder, filename)
+        if not os.path.exists(file_path):
+            print(f"[STATIC] ERROR: Archivo no encontrado: {file_path}")
+            return jsonify({'error': 'Archivo no encontrado'}), 404
+        
+        return send_from_directory(static_folder, filename)
+    except Exception as e:
+        print(f"[STATIC] ERROR: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @main_bp.route('/api/debug', methods=['GET'])
 def debug_info():
     """Endpoint de debug para verificar la configuración"""
+    from flask import current_app
     import sys
     import os
     
@@ -196,37 +209,70 @@ def debug_info():
         import google.generativeai as genai
         gemini_available = True
         gemini_version = getattr(genai, '__version__', 'unknown')
-    except:
+    except Exception as e:
         gemini_available = False
-        gemini_version = 'not installed'
+        gemini_version = f'error: {str(e)}'
     
     try:
         import requests
         requests_available = True
-    except:
+        requests_version = requests.__version__
+    except Exception as e:
         requests_available = False
+        requests_version = f'error: {str(e)}'
     
     try:
         import bs4
         bs4_available = True
-    except:
+        bs4_version = bs4.__version__
+    except Exception as e:
         bs4_available = False
+        bs4_version = f'error: {str(e)}'
+    
+    # Información de paths
+    app_dir = os.path.dirname(os.path.abspath(__file__))
+    static_folder = current_app.static_folder
+    template_folder = current_app.template_folder
+    
+    # Verificar existencia de archivos críticos
+    static_files = {}
+    if os.path.exists(static_folder):
+        for root, dirs, files in os.walk(static_folder):
+            for file in files:
+                rel_path = os.path.relpath(os.path.join(root, file), static_folder)
+                static_files[rel_path] = True
     
     return jsonify({
-        'status': 'debug',
-        'python_version': sys.version,
+        'status': 'healthy',
+        'environment': 'vercel' if 'VERCEL' in os.environ else 'local',
+        'python_version': sys.version.split()[0],
         'cwd': os.getcwd(),
+        'paths': {
+            'app_dir': app_dir,
+            'static_folder': static_folder,
+            'template_folder': template_folder,
+            'static_exists': os.path.exists(static_folder),
+            'templates_exists': os.path.exists(template_folder)
+        },
+        'static_files': static_files,
         'modules': {
             'google-generativeai': {
                 'available': gemini_available,
                 'version': gemini_version
             },
-            'requests': {'available': requests_available},
-            'beautifulsoup4': {'available': bs4_available}
+            'requests': {
+                'available': requests_available,
+                'version': requests_version
+            },
+            'beautifulsoup4': {
+                'available': bs4_available,
+                'version': bs4_version
+            }
         },
         'config': {
             'target_sites': Config.TARGET_SITES,
             'max_results': Config.MAX_RESULTS_PER_SITE,
             'timeout': Config.REQUEST_TIMEOUT
-        }
+        },
+        'routes': [str(rule) for rule in current_app.url_map.iter_rules()]
     })
