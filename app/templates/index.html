@@ -146,6 +146,17 @@
                 <p id="aiSummary" class="text-lg leading-relaxed"></p>
             </div>
             
+            <!-- AI Insights (Nuevo) -->
+            <div id="aiInsights" class="hidden bg-white rounded-2xl shadow-xl p-8 mb-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                    <i class="fas fa-lightbulb mr-3 text-yellow-500"></i>
+                    Insights Inteligentes
+                </h2>
+                <div id="insightsList" class="space-y-4">
+                    <!-- Insights will be inserted here by JavaScript -->
+                </div>
+            </div>
+            
             <!-- Statistics Cards -->
             <div id="statisticsCards" class="grid md:grid-cols-4 gap-6 mb-8">
                 <!-- Cards will be inserted here by JavaScript -->
@@ -172,8 +183,10 @@
                             <tr class="bg-gray-100 border-b-2 border-gray-300">
                                 <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Tienda</th>
                                 <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Producto</th>
+                                <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Condición</th>
                                 <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Precio</th>
-                                <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Reviews</th>
+                                <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">vs Promedio</th>
+                                <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Valor</th>
                                 <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Recomendación</th>
                                 <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Acción</th>
                             </tr>

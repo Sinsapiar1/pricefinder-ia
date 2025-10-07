@@ -85,39 +85,60 @@ class GeminiAnalyzer:
             return None
     
     def _build_analysis_prompt(self, products, product_name):
-        """Construye el prompt para enviar a Gemini"""
+        """Construye el prompt MEJORADO para análisis inteligente con Gemini"""
         
-        # Prompt simplificado para mejor compatibilidad con cuenta gratuita
-        prompt = f"""Analiza estos productos y devuelve SOLO JSON válido (sin texto adicional):
+        prompt = f"""Eres un experto analista de productos y precios. Analiza estos productos con INTELIGENCIA PROFUNDA.
 
-PRODUCTO BUSCADO: {product_name}
+🎯 PRODUCTO BUSCADO: {product_name}
 
-PRODUCTOS:
+📦 PRODUCTOS ENCONTRADOS:
 {json.dumps(products, indent=2, ensure_ascii=False)}
 
-DEVOLVER JSON con esta estructura:
+🧠 ANÁLISIS REQUERIDO:
+1. Identifica productos IDÉNTICOS (mismo modelo/versión)
+2. Detecta productos SIMILARES (alternativas válidas)
+3. Identifica especificaciones clave en los nombres
+4. Detecta condición: nuevo, reacondicionado, usado
+5. Calcula valor real (precio/características)
+6. Identifica ofertas excepcionales o precios sospechosos
+
+📊 DEVOLVER JSON (sin texto adicional):
 {{
-  "summary": "El mejor precio para [producto] es $[precio] en [tienda], ahorrando X% vs promedio",
+  "summary": "Análisis inteligente: [insight principal]. Encontrados [N] productos idénticos y [M] alternativas. [Recomendación específica con % de ahorro]",
+  "insights": [
+    "Insight 1: [Observación inteligente]",
+    "Insight 2: [Comparación de valor]",
+    "Insight 3: [Advertencia o recomendación]"
+  ],
   "products": [
     {{
-      "tienda": "...",
-      "nombre_normalizado": "...",
-      "nombre_crudo": "...",
+      "tienda": "nombre_tienda",
+      "nombre_normalizado": "Nombre estandarizado del producto",
+      "nombre_crudo": "nombre original",
       "precio": 0.00,
-      "url": "...",
+      "url": "url",
       "reviews": 0.0,
-      "recomendacion": "Mejor Precio|Alternativa|No Recomendado",
-      "razon": "..."
+      "categoria": "Idéntico|Similar|Alternativa|Diferente",
+      "condicion": "Nuevo|Reacondicionado|Usado|Desconocido",
+      "especificaciones_detectadas": ["spec1", "spec2"],
+      "recomendacion": "🏆 Mejor Opción|✅ Buena Alternativa|⚠️ Considerar|❌ No Recomendado",
+      "razon": "Razón detallada con % de ahorro/sobrecosto",
+      "valor_score": 0-100,
+      "precio_vs_promedio": "+X%|-X%"
     }}
   ]
 }}
 
-REGLAS:
-- Normaliza nombres de productos similares
-- "Mejor Precio" = precio más bajo
-- "Alternativa" = precio razonable
-- "No Recomendado" = precio alto o producto usado sin ventaja
-- Calcula % de ahorro vs precio promedio"""
+🎯 CRITERIOS INTELIGENTES:
+- 🏆 "Mejor Opción": Precio más bajo para producto idéntico O mejor valor precio/calidad
+- ✅ "Buena Alternativa": Precio competitivo, buen valor
+- ⚠️ "Considerar": Precio alto pero puede tener ventajas (garantía, vendedor oficial)
+- ❌ "No Recomendado": Precio excesivo sin justificación o producto claramente inferior
+
+💡 INSIGHTS: Genera 3 observaciones inteligentes sobre:
+- Diferencias de precio entre tiendas para producto idéntico
+- Alternativas que ofrecen mejor valor
+- Advertencias sobre precios anormales o productos engañosos"""
         
         return prompt
     

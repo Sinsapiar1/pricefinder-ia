@@ -60,6 +60,11 @@ function displayResults(data) {
     // Mostrar resumen de IA
     displayAISummary(data.summary);
     
+    // Mostrar insights inteligentes (NUEVO)
+    if (data.insights && data.insights.length > 0) {
+        displayAIInsights(data.insights);
+    }
+    
     // Mostrar estadísticas
     displayStatistics(data.statistics);
     
@@ -77,6 +82,28 @@ function displayResults(data) {
 function displayAISummary(summary) {
     const summaryElement = document.getElementById('aiSummary');
     summaryElement.textContent = summary;
+}
+
+// Mostrar insights inteligentes (NUEVO)
+function displayAIInsights(insights) {
+    const insightsSection = document.getElementById('aiInsights');
+    const insightsList = document.getElementById('insightsList');
+    
+    insightsSection.classList.remove('hidden');
+    insightsList.innerHTML = '';
+    
+    const iconos = ['💡', '🎯', '⚡'];
+    const colores = ['bg-blue-50 border-blue-500', 'bg-green-50 border-green-500', 'bg-yellow-50 border-yellow-500'];
+    
+    insights.forEach((insight, index) => {
+        const insightDiv = document.createElement('div');
+        insightDiv.className = `${colores[index % 3]} border-l-4 rounded-lg p-4 flex items-start`;
+        insightDiv.innerHTML = `
+            <span class="text-2xl mr-3">${iconos[index % 3]}</span>
+            <p class="text-gray-800 leading-relaxed">${insight}</p>
+        `;
+        insightsList.appendChild(insightDiv);
+    });
 }
 
 // Mostrar estadísticas
@@ -123,16 +150,28 @@ function displayStatistics(stats) {
     `).join('');
 }
 
-// Mostrar tabla de productos
+// Mostrar tabla de productos (MEJORADA CON NUEVOS CAMPOS)
 function displayProductsTable(products) {
     const tableBody = document.getElementById('productsTableBody');
     
-    // Ordenar productos por precio (ascendente)
-    const sortedProducts = [...products].sort((a, b) => a.precio - b.precio);
+    // Ordenar productos por recomendación y precio
+    const sortedProducts = [...products].sort((a, b) => {
+        const order = { '🏆 Mejor Opción': 0, '✅ Buena Alternativa': 1, '⚠️ Considerar': 2, '❌ No Recomendado': 3 };
+        return (order[a.recomendacion] || 4) - (order[b.recomendacion] || 4) || a.precio - b.precio;
+    });
     
     tableBody.innerHTML = sortedProducts.map(product => {
-        const badgeClass = getBadgeClass(product.recomendacion);
-        const starsHTML = getStarsHTML(product.reviews);
+        const badgeClass = getBadgeClassNew(product.recomendacion);
+        const condicionBadge = getCondicionBadge(product.condicion || 'Desconocido');
+        const valorBar = getValorBar(product.valor_score || 50);
+        const precioVsPromedio = product.precio_vs_promedio || '0%';
+        const precioVsClass = precioVsPromedio.startsWith('-') ? 'text-green-600' : 'text-red-600';
+        const categoriaIcon = getCategoriaIcon(product.categoria || 'Diferente');
+        
+        // Tooltip con especificaciones
+        const especsTooltip = (product.especificaciones_detectadas && product.especificaciones_detectadas.length > 0)
+            ? product.especificaciones_detectadas.join(', ')
+            : 'N/A';
         
         return `
             <tr class="border-b hover:bg-gray-50 transition">
@@ -140,23 +179,31 @@ function displayProductsTable(products) {
                     <span class="font-semibold text-gray-800">${product.tienda}</span>
                 </td>
                 <td class="px-6 py-4">
-                    <p class="font-medium text-gray-900">${product.nombre_normalizado}</p>
-                    <p class="text-xs text-gray-500 mt-1">${product.nombre_crudo}</p>
+                    <div class="flex items-start">
+                        <span class="text-xl mr-2" title="${product.categoria}">${categoriaIcon}</span>
+                        <div>
+                            <p class="font-medium text-gray-900">${product.nombre_normalizado || product.nombre_crudo}</p>
+                            <p class="text-xs text-gray-500 mt-1" title="${especsTooltip}">${product.nombre_crudo}</p>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-6 py-4 text-center">
+                    ${condicionBadge}
                 </td>
                 <td class="px-6 py-4 text-center">
                     <span class="text-2xl font-bold text-indigo-600">$${product.precio.toFixed(2)}</span>
                 </td>
                 <td class="px-6 py-4 text-center">
-                    <div class="flex items-center justify-center space-x-1">
-                        ${starsHTML}
-                        <span class="text-sm text-gray-600 ml-2">${product.reviews.toFixed(1)}</span>
-                    </div>
+                    <span class="font-semibold ${precioVsClass}">${precioVsPromedio}</span>
                 </td>
                 <td class="px-6 py-4 text-center">
-                    <span class="px-3 py-1 rounded-full text-xs font-semibold ${badgeClass}">
+                    ${valorBar}
+                </td>
+                <td class="px-6 py-4 text-center">
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold ${badgeClass} block mb-2">
                         ${product.recomendacion}
                     </span>
-                    <p class="text-xs text-gray-600 mt-2">${product.razon || ''}</p>
+                    <p class="text-xs text-gray-600">${product.razon || ''}</p>
                 </td>
                 <td class="px-6 py-4 text-center">
                     <a href="${product.url}" target="_blank" 
@@ -265,6 +312,61 @@ function getStarsHTML(rating) {
     }
     
     return html;
+}
+
+// Nuevas funciones auxiliares para análisis inteligente
+function getBadgeClassNew(recomendacion) {
+    switch(recomendacion) {
+        case '🏆 Mejor Opción':
+            return 'bg-green-100 text-green-800 border border-green-300';
+        case '✅ Buena Alternativa':
+            return 'bg-blue-100 text-blue-800 border border-blue-300';
+        case '⚠️ Considerar':
+            return 'bg-yellow-100 text-yellow-800 border border-yellow-300';
+        case '❌ No Recomendado':
+            return 'bg-red-100 text-red-800 border border-red-300';
+        default:
+            // Fallback a badges antiguos
+            return getBadgeClass(recomendacion);
+    }
+}
+
+function getCondicionBadge(condicion) {
+    const badges = {
+        'Nuevo': '<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-semibold">✨ Nuevo</span>',
+        'Reacondicionado': '<span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-semibold">🔄 Reacond.</span>',
+        'Usado': '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-semibold">📦 Usado</span>',
+        'Desconocido': '<span class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">❓ N/A</span>'
+    };
+    return badges[condicion] || badges['Desconocido'];
+}
+
+function getValorBar(score) {
+    // score es de 0 a 100
+    const percentage = Math.min(100, Math.max(0, score));
+    let barColor = 'bg-red-500';
+    if (percentage >= 75) barColor = 'bg-green-500';
+    else if (percentage >= 50) barColor = 'bg-yellow-500';
+    else if (percentage >= 25) barColor = 'bg-orange-500';
+    
+    return `
+        <div class="w-full">
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div class="${barColor} h-2.5 rounded-full" style="width: ${percentage}%"></div>
+            </div>
+            <span class="text-xs text-gray-600 mt-1 block">${percentage}/100</span>
+        </div>
+    `;
+}
+
+function getCategoriaIcon(categoria) {
+    const icons = {
+        'Idéntico': '🎯',
+        'Similar': '🔄',
+        'Alternativa': '💡',
+        'Diferente': '❓'
+    };
+    return icons[categoria] || '📦';
 }
 
 // Funciones de UI
