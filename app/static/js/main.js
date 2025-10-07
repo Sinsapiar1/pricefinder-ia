@@ -212,12 +212,18 @@ function displayProductsTable(products) {
                         <span class="font-semibold text-gray-800 text-sm sm:text-base hidden sm:inline">${product.tienda}</span>
                     </div>
                 </td>
-                <td class="px-4 sm:px-6 py-4">
+                <td class="px-4 sm:px-6 py-4 max-w-md">
                     <div class="flex items-start">
                         <span class="text-lg sm:text-xl mr-2 flex-shrink-0" title="${product.categoria}">${categoriaIcon}</span>
-                        <div class="min-w-0">
-                            <p class="font-medium text-gray-900 text-sm sm:text-base line-clamp-2">${product.nombre_normalizado || product.nombre_crudo}</p>
-                            <p class="text-xs text-gray-500 mt-1 line-clamp-1" title="${especsTooltip}">${product.nombre_crudo}</p>
+                        <div class="min-w-0 flex-1">
+                            <p class="font-semibold text-gray-900 text-sm sm:text-base leading-tight mb-1" 
+                               style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
+                                ${product.nombre_normalizado || product.nombre_crudo}
+                            </p>
+                            <p class="text-xs text-gray-600 mt-1 italic" 
+                               title="${product.nombre_crudo}">
+                                ${product.nombre_crudo.substring(0, 80)}${product.nombre_crudo.length > 80 ? '...' : ''}
+                            </p>
                             <!-- Mostrar condición en móvil -->
                             <div class="mt-2 sm:hidden">
                                 ${condicionBadge}
@@ -418,14 +424,14 @@ function getCategoriaIcon(categoria) {
     return icons[categoria] || '📦';
 }
 
-// Funciones para logos de tiendas
+// Funciones para logos de tiendas (colores de marca reales)
 function getStoreColor(tienda) {
     const colors = {
-        'amazon.com': 'from-orange-500 to-yellow-600',
-        'bestbuy.com': 'from-blue-500 to-blue-700',
-        'walmart.com': 'from-blue-600 to-blue-800',
-        'ebay.com': 'from-red-500 to-yellow-500',
-        'target.com': 'from-red-600 to-red-700'
+        'amazon.com': 'from-orange-500 to-yellow-600',        // Amazon naranja/amarillo
+        'walmart.com': 'from-blue-500 to-yellow-400',         // Walmart azul/amarillo
+        'ebay.com': 'from-red-500 to-blue-500',               // eBay rojo/azul/amarillo
+        'bestbuy.com': 'from-blue-600 to-yellow-400',         // BestBuy azul/amarillo
+        'target.com': 'from-red-600 to-red-700'               // Target rojo
     };
     return colors[tienda.toLowerCase()] || 'from-gray-500 to-gray-700';
 }
@@ -433,9 +439,9 @@ function getStoreColor(tienda) {
 function getStoreInitials(tienda) {
     const initials = {
         'amazon.com': 'AZ',
-        'bestbuy.com': 'BB',
         'walmart.com': 'WM',
         'ebay.com': 'EB',
+        'bestbuy.com': 'BB',
         'target.com': 'TG'
     };
     return initials[tienda.toLowerCase()] || tienda.substring(0, 2).toUpperCase();

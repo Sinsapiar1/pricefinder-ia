@@ -37,9 +37,13 @@ class ProductScraper:
     
     def _search_site(self, site, product_name):
         products = []
+        search_query = product_name.replace(" ", "+")
+        
         search_urls = {
-            'amazon.com': f'https://www.amazon.com/s?k={product_name.replace(" ", "+")}',
-            'bestbuy.com': f'https://www.bestbuy.com/site/searchpage.jsp?st={product_name.replace(" ", "+")}'
+            'amazon.com': f'https://www.amazon.com/s?k={search_query}',
+            'walmart.com': f'https://www.walmart.com/search?q={search_query}',
+            'ebay.com': f'https://www.ebay.com/sch/i.html?_nkw={search_query}',
+            'bestbuy.com': f'https://www.bestbuy.com/site/searchpage.jsp?st={search_query}'
         }
         
         target_url = search_urls.get(site)
@@ -54,8 +58,8 @@ class ProductScraper:
             'country_code': 'us',  # Asegurar resultados de USA
         }
         
-        # Para BestBuy, necesitamos render JS (pero solo si es BestBuy)
-        if 'bestbuy' in site:
+        # Render JS solo para sitios que lo necesitan (ahorra créditos)
+        if 'bestbuy' in site or 'walmart' in site:
             scraper_params['render'] = 'true'
         
         # Construir URL de ScraperAPI
@@ -71,6 +75,12 @@ class ProductScraper:
                 if 'amazon.com' in site:
                     products = self._parse_amazon(soup, site)
                     print(f"    Amazon parseado: {len(products)} productos")
+                elif 'walmart.com' in site:
+                    products = self._parse_walmart(soup, site)
+                    print(f"    Walmart parseado: {len(products)} productos")
+                elif 'ebay.com' in site:
+                    products = self._parse_ebay(soup, site)
+                    print(f"    eBay parseado: {len(products)} productos")
                 elif 'bestbuy.com' in site:
                     products = self._parse_bestbuy(soup, site)
                     print(f"    BestBuy parseado: {len(products)} productos")
@@ -236,10 +246,146 @@ class ProductScraper:
         return products
     
     def _parse_walmart(self, soup, site):
-        return []
+        """Parser REAL para Walmart.com"""
+        products = []
+        
+        # Walmart usa diferentes estructuras según el tipo de página
+        # Intentar múltiples selectores
+        items = soup.find_all('div', {'data-item-id': True})
+        if not items:
+            items = soup.find_all('div', class_=re.compile('search-result'))
+        if not items:
+            items = soup.find_all('div', {'data-testid': 'list-view'})
+        
+        print(f"    Walmart: Encontrados {len(items)} items en HTML")
+        
+        for item in items[:self.max_results]:
+            try:
+                # Buscar nombre
+                name_elem = item.find('span', {'data-automation-id': 'product-title'})
+                if not name_elem:
+                    name_elem = item.find('a', {'link-identifier': True})
+                if not name_elem:
+                    name_elem = item.find('span', class_=re.compile('product-title'))
+                if not name_elem:
+                    continue
+                
+                # Buscar precio
+                price_elem = item.find('span', {'data-automation-id': 'product-price'})
+                if not price_elem:
+                    price_elem = item.find('div', class_=re.compile('price'))
+                if not price_elem:
+                    continue
+                
+                # Buscar link
+                link_elem = item.find('a', href=True)
+                if not link_elem:
+                    continue
+                
+                try:
+                    # Extraer precio
+                    price_text = price_elem.text.replace('$', '').replace(',', '').strip()
+                    match = re.search(r'(\d+\.?\d*)', price_text)
+                    if match:
+                        price = float(match.group(1))
+                    else:
+                        continue
+                except:
+                    continue
+                
+                # Construir URL
+                href = link_elem['href']
+                if href.startswith('/'):
+                    product_url = f"https://www.walmart.com{href}"
+                elif href.startswith('http'):
+                    product_url = href
+                else:
+                    product_url = f"https://www.walmart.com/{href}"
+                
+                products.append({
+                    'tienda': site,
+                    'nombre_crudo': name_elem.text.strip(),
+                    'precio': price,
+                    'url': product_url,
+                    'reviews': 4.0
+                })
+                print(f"    ✓ Walmart producto: {name_elem.text.strip()[:50]}... - ${price}")
+            except Exception as e:
+                print(f"    ⚠ Error parseando item de Walmart: {str(e)[:50]}")
+                continue
+        
+        return products
     
     def _parse_ebay(self, soup, site):
-        return []
+        """Parser REAL para eBay.com"""
+        products = []
+        
+        # eBay usa estructura más simple
+        items = soup.find_all('li', class_='s-item')
+        if not items:
+            items = soup.find_all('div', class_='s-item')
+        
+        print(f"    eBay: Encontrados {len(items)} items en HTML")
+        
+        for item in items[:self.max_results]:
+            try:
+                # Buscar nombre
+                name_elem = item.find('h3', class_='s-item__title')
+                if not name_elem:
+                    name_elem = item.find('div', class_='s-item__title')
+                if not name_elem:
+                    continue
+                
+                # Saltar "Shop on eBay" y otros items especiales
+                if 'shop on ebay' in name_elem.text.lower():
+                    continue
+                
+                # Buscar precio
+                price_elem = item.find('span', class_='s-item__price')
+                if not price_elem:
+                    continue
+                
+                # Buscar link
+                link_elem = item.find('a', class_='s-item__link', href=True)
+                if not link_elem:
+                    link_elem = item.find('a', href=True)
+                if not link_elem:
+                    continue
+                
+                try:
+                    # Extraer precio (puede tener "to" para rangos)
+                    price_text = price_elem.text.replace('$', '').replace(',', '').strip()
+                    # Si hay rango (ej: "$100 to $200"), tomar el primero
+                    if 'to' in price_text.lower():
+                        price_text = price_text.lower().split('to')[0].strip()
+                    
+                    match = re.search(r'(\d+\.?\d*)', price_text)
+                    if match:
+                        price = float(match.group(1))
+                    else:
+                        continue
+                except:
+                    continue
+                
+                # URL de eBay
+                product_url = link_elem['href']
+                if not product_url.startswith('http'):
+                    product_url = f"https://www.ebay.com{product_url}"
+                
+                products.append({
+                    'tienda': site,
+                    'nombre_crudo': name_elem.text.strip(),
+                    'precio': price,
+                    'url': product_url,
+                    'reviews': 4.0
+                })
+                print(f"    ✓ eBay producto: {name_elem.text.strip()[:50]}... - ${price}")
+            except Exception as e:
+                print(f"    ⚠ Error parseando item de eBay: {str(e)[:50]}")
+                continue
+        
+        return products
     
     def _parse_target(self, soup, site):
+        """Target no implementado aún"""
         return []

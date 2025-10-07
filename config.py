@@ -23,10 +23,12 @@ class Config:
     # Configuración de producción
     TESTING = os.environ.get('TESTING', 'False').lower() == 'true'
     
-    # Sitios para scraping (optimizado para Vercel - solo sitios implementados)
+    # Sitios para scraping - Tiendas reales que ScraperAPI puede scrapear
     TARGET_SITES = [
         'amazon.com',
-        'bestbuy.com'
+        'walmart.com',
+        'ebay.com',
+        'bestbuy.com',
     ]
     
     # Límites de búsqueda (optimizado para cuenta gratuita de ScraperAPI)
