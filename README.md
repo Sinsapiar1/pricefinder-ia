@@ -5,6 +5,8 @@ Aplicación web profesional para búsqueda inteligente de productos en las princ
 ![Python](https://img.shields.io/badge/Python-3.11-blue)
 ![Flask](https://img.shields.io/badge/Flask-3.0-green)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/tu-usuario/pricefinder-ia)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
 
 ## 📋 Descripción
 
@@ -158,9 +160,34 @@ pricefinder-ia/
 2. Railway detectará automáticamente el Dockerfile
 3. Deploy automático en cada push
 
-### Vercel (Solo Frontend)
+### Vercel
 
-Para el frontend estático con Next.js o similar.
+La aplicación está completamente configurada para Vercel con funciones serverless:
+
+1. **Fork o clona el repositorio en GitHub**
+
+2. **Conecta con Vercel**:
+   - Ve a [vercel.com](https://vercel.com)
+   - Click en "New Project"
+   - Importa tu repositorio de GitHub
+
+3. **Configuración automática**:
+   - Vercel detectará automáticamente la configuración
+   - No necesitas configurar nada adicional
+
+4. **Deploy**:
+   - Click en "Deploy"
+   - Espera a que termine el despliegue (2-3 minutos)
+
+5. **Usar la aplicación**:
+   - Vercel te dará una URL (ej: `tu-app.vercel.app`)
+   - Ingresa tus API keys en la interfaz web
+   - ¡Listo para usar!
+
+**Limitaciones en Vercel**:
+- Timeout de 10 segundos (plan gratuito) o 60 segundos (plan pro)
+- Ideal para búsquedas rápidas
+- Si necesitas más tiempo, usa Render o Railway
 
 ## 🔄 CI/CD con GitHub Actions
 
