@@ -1,43 +1,62 @@
-import google.generativeai as genai
 import json
 import re
 
+# Importar Gemini de forma opcional
+try:
+    import google.generativeai as genai
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
+    print("⚠ google-generativeai no disponible")
+
 class GeminiAnalyzer:
-    """Servicio para analizar productos usando Google Gemini"""
+    """Servicio para analizar productos - con fallback si Gemini falla"""
     
     def __init__(self, api_key):
+        self.api_key = api_key
+        self.model = None
+        self.use_fallback = False
+        
+        if not GEMINI_AVAILABLE:
+            print("⚠ Usando análisis básico (Gemini no disponible)")
+            self.use_fallback = True
+            return
+        
         try:
             genai.configure(api_key=api_key)
             
-            # Usar el modelo más simple y compatible - SIN prefijos
-            # Este modelo funciona en TODAS las versiones de la API
-            model_name = 'gemini-1.5-flash'
+            # Probar modelos en orden - el que funcione primero
+            models_to_try = [
+                'gemini-1.5-flash-latest',
+                'gemini-1.5-flash', 
+                'gemini-1.0-pro',
+                'gemini-pro'
+            ]
             
-            try:
-                self.model = genai.GenerativeModel(model_name)
-                print(f"✓ Gemini configurado exitosamente con: {model_name}")
-            except Exception as e:
-                # Fallback al modelo clásico si falla
-                print(f"⚠ {model_name} no disponible, intentando gemini-pro...")
-                model_name = 'gemini-pro'
-                self.model = genai.GenerativeModel(model_name)
-                print(f"✓ Gemini configurado con fallback: {model_name}")
+            for model_name in models_to_try:
+                try:
+                    self.model = genai.GenerativeModel(model_name)
+                    # Probar que realmente funciona
+                    test_response = self.model.generate_content("test")
+                    print(f"✓ Gemini configurado: {model_name}")
+                    self.use_fallback = False
+                    return
+                except Exception as e:
+                    print(f"⚠ {model_name} no funciona: {str(e)[:50]}")
+                    continue
+            
+            # Si ningún modelo funcionó, usar fallback
+            print("⚠ Ningún modelo de Gemini funcionó, usando análisis básico")
+            self.use_fallback = True
                     
         except Exception as e:
-            error_msg = str(e)
-            print(f"✗ Error al configurar Gemini: {error_msg}")
-            
-            # Mensaje de ayuda específico
-            if 'API key' in error_msg or 'invalid' in error_msg.lower():
-                raise Exception("API key de Gemini inválida. Genera una nueva en https://aistudio.google.com/app/apikey")
-            elif 'not found' in error_msg.lower():
-                raise Exception("Modelo no disponible. Tu API key de Gemini puede no tener acceso. Intenta generar una nueva key.")
-            else:
-                raise Exception(f"Error al inicializar Gemini: {error_msg}")
+            print(f"✗ Error configurando Gemini: {str(e)}")
+            print("⚠ Usando análisis básico en su lugar")
+            self.use_fallback = True
     
     def analyze_products(self, raw_products, product_name):
         """
-        Analiza productos crudos y genera recomendaciones
+        Analiza productos - con IA si está disponible, o análisis básico
         
         Args:
             raw_products (list): Lista de productos sin procesar
@@ -48,6 +67,11 @@ class GeminiAnalyzer:
         """
         if not raw_products:
             return None
+        
+        # Si Gemini no está disponible o falló, usar análisis básico
+        if self.use_fallback:
+            print("⚠ Usando análisis básico (sin IA)")
+            return self._basic_analysis(raw_products, product_name)
         
         # Construir el prompt para Gemini
         prompt = self._build_analysis_prompt(raw_products, product_name)
@@ -201,6 +225,74 @@ REGLAS:
                 'products': []
             }
     
+    def _basic_analysis(self, raw_products, product_name):
+        """Análisis básico SIN IA - para cuando Gemini no está disponible"""
+        print("📊 Generando análisis básico...")
+        
+        # Calcular estadísticas
+        prices = [p['precio'] for p in raw_products]
+        avg_price = sum(prices) / len(prices)
+        min_price = min(prices)
+        max_price = max(prices)
+        
+        # Procesar productos
+        processed_products = []
+        for product in raw_products:
+            precio = product['precio']
+            diff_pct = ((precio - avg_price) / avg_price) * 100
+            
+            # Determinar recomendación basada en precio
+            if precio == min_price:
+                recomendacion = "🏆 Mejor Opción"
+                razon = f"Precio más bajo encontrado (${precio:.2f})"
+            elif precio <= avg_price:
+                recomendacion = "✅ Buena Alternativa"
+                razon = f"Precio por debajo del promedio ({diff_pct:+.1f}%)"
+            elif precio <= avg_price * 1.15:
+                recomendacion = "⚠️ Considerar"
+                razon = f"Precio ligeramente elevado ({diff_pct:+.1f}%)"
+            else:
+                recomendacion = "❌ No Recomendado"
+                razon = f"Precio muy alto ({diff_pct:+.1f}%)"
+            
+            processed_products.append({
+                'tienda': product['tienda'],
+                'nombre_normalizado': product['nombre_crudo'],
+                'nombre_crudo': product['nombre_crudo'],
+                'precio': precio,
+                'url': product['url'],
+                'reviews': product.get('reviews', 4.0),
+                'categoria': 'Similar',
+                'condicion': 'Nuevo',
+                'especificaciones_detectadas': [],
+                'recomendacion': recomendacion,
+                'razon': razon,
+                'valor_score': 100 - int(abs(diff_pct)),
+                'precio_vs_promedio': f"{diff_pct:+.1f}%"
+            })
+        
+        # Generar resumen e insights
+        best_product = min(processed_products, key=lambda x: x['precio'])
+        savings = max_price - min_price
+        savings_pct = (savings / max_price) * 100 if max_price > 0 else 0
+        
+        summary = f"Análisis de precios para {product_name}: Encontrados {len(processed_products)} productos. El mejor precio es ${min_price:.2f} en {best_product['tienda']}, ahorrando ${savings:.2f} ({savings_pct:.1f}%) vs el más caro."
+        
+        insights = [
+            f"💰 El precio más bajo ({best_product['tienda']}: ${min_price:.2f}) ahorra ${savings:.2f} vs el más alto",
+            f"📊 Precio promedio del mercado: ${avg_price:.2f}",
+            f"✅ {sum(1 for p in processed_products if '✅' in p['recomendacion'] or '🏆' in p['recomendacion'])} opciones recomendadas encontradas"
+        ]
+        
+        statistics = self._calculate_statistics(processed_products)
+        
+        return {
+            'summary': summary,
+            'insights': insights,
+            'products': processed_products,
+            'statistics': statistics
+        }
+    
     def _calculate_statistics(self, products):
         """Calcula estadísticas sobre los productos analizados"""
         if not products:
@@ -216,9 +308,10 @@ REGLAS:
         max_price = max(prices)
         
         # Contar recomendaciones
-        best_price_count = sum(1 for p in products if p.get('recomendacion') == 'Mejor Precio')
-        alternative_count = sum(1 for p in products if p.get('recomendacion') == 'Alternativa')
-        not_recommended_count = sum(1 for p in products if p.get('recomendacion') == 'No Recomendado')
+        best_price_count = sum(1 for p in products if '🏆' in p.get('recomendacion', ''))
+        alternative_count = sum(1 for p in products if '✅' in p.get('recomendacion', ''))
+        consider_count = sum(1 for p in products if '⚠️' in p.get('recomendacion', ''))
+        not_recommended_count = sum(1 for p in products if '❌' in p.get('recomendacion', ''))
         
         return {
             'precio_promedio': round(avg_price, 2),
