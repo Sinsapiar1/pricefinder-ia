@@ -181,7 +181,9 @@ def serve_static(filename):
     """Servir archivos estáticos (fallback para Vercel)"""
     from flask import send_from_directory
     import os
-    static_folder = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'app', 'static')
+    # El path correcto es: /workspace/app/static/
+    static_folder = os.path.join(os.path.dirname(__file__), 'static')
+    print(f"Sirviendo archivo estático: {filename} desde {static_folder}")
     return send_from_directory(static_folder, filename)
 
 @main_bp.route('/api/debug', methods=['GET'])
