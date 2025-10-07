@@ -9,23 +9,34 @@ class GeminiAnalyzer:
         try:
             genai.configure(api_key=api_key)
             
-            # Usar modelos con mejor cuota gratuita
+            # Usar modelos disponibles (versión 0.3.2)
             models_to_try = [
-                'gemini-flash-latest',      # Mejor opción
-                'gemini-2.5-flash',         # Alternativa
-                'gemini-2.0-flash',         # Fallback
+                'gemini-1.5-flash',         # Modelo rápido y gratis
+                'gemini-1.5-pro',           # Más potente
+                'gemini-pro',               # Fallback clásico
             ]
+            
+            model_created = False
+            last_error = None
             
             for model_name in models_to_try:
                 try:
                     self.model = genai.GenerativeModel(model_name)
-                    print(f"✓ Gemini configurado: {model_name}")
+                    print(f"✓ Gemini configurado exitosamente: {model_name}")
+                    model_created = True
                     break
                 except Exception as e:
+                    last_error = str(e)
+                    print(f"⚠ Modelo {model_name} no disponible: {last_error}")
                     continue
+            
+            if not model_created:
+                raise Exception(f"No se pudo inicializar ningún modelo. Último error: {last_error}")
                     
         except Exception as e:
-            print(f"✗ Error: {str(e)}")
+            print(f"✗ Error al configurar Gemini: {str(e)}")
+            import traceback
+            traceback.print_exc()
             raise
     
     def analyze_products(self, raw_products, product_name):
