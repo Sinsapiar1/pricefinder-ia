@@ -68,17 +68,19 @@ class ProductScraper:
             # eBay a veces necesita render también
             scraper_params['render'] = 'false'  # Explícitamente false primero
         
-        # Walmart: Necesita render JS + parámetros especiales
+        # Walmart: Necesita render JS + parámetros premium
         elif 'walmart' in site:
             scraper_params['render'] = 'true'
             scraper_params['country_code'] = 'us'
-            scraper_params['wait_for_selector'] = '[data-automation-id="product-title"]'
+            scraper_params['premium'] = 'true'  # Usar premium proxies si están disponibles
+            scraper_params['session_number'] = '123'
         
-        # BestBuy: Necesita render JS
+        # BestBuy: Necesita render JS + parámetros premium
         elif 'bestbuy' in site:
             scraper_params['render'] = 'true'
             scraper_params['country_code'] = 'us'
-            scraper_params['wait_for_selector'] = '.sku-title'
+            scraper_params['premium'] = 'true'  # Usar premium proxies si están disponibles
+            scraper_params['session_number'] = '456'
         
         # Construir URL de ScraperAPI
         scraper_url = 'http://api.scraperapi.com'
@@ -410,9 +412,33 @@ class ProductScraper:
                 
                 nombre_texto = name_elem.text.strip()
                 
-                # Saltar "Shop on eBay" y otros items especiales
-                if 'shop on ebay' in nombre_texto.lower() or len(nombre_texto) < 10:
-                    print(f"    eBay item {idx}: Item especial, saltando")
+                # Filtrar items especiales/patrocinados/basura de eBay
+                filtros_ebay = [
+                    'shop on ebay',
+                    'based on number',
+                    'sponsored',
+                    'see more',
+                    'new listing',
+                    'advertisement',
+                    'promoted'
+                ]
+                
+                # Verificar si contiene palabras de filtro
+                nombre_lower = nombre_texto.lower()
+                es_item_especial = any(filtro in nombre_lower for filtro in filtros_ebay)
+                
+                # También verificar longitud mínima razonable
+                if es_item_especial or len(nombre_texto) < 15:
+                    print(f"    eBay item {idx}: Item especial/patrocinado saltado: '{nombre_texto[:30]}'")
+                    continue
+                
+                # Verificar que el nombre tenga al menos una palabra del producto buscado
+                # Esto evita items completamente no relacionados
+                product_words = product_name.lower().split()
+                tiene_palabra_relevante = any(word in nombre_lower for word in product_words if len(word) > 3)
+                
+                if not tiene_palabra_relevante:
+                    print(f"    eBay item {idx}: No relevante para '{product_name}'")
                     continue
                 
                 # Buscar precio con MÚLTIPLES selectores
