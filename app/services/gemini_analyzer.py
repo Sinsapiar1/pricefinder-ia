@@ -9,9 +9,11 @@ class GeminiAnalyzer:
         try:
             genai.configure(api_key=api_key)
             
-            # Usar modelos disponibles en v0.3.2
+            # Usar modelos disponibles en v0.7.2 con API v1
             models_to_try = [
-                'gemini-pro',               # Modelo estable y funcional
+                'models/gemini-1.5-flash',      # Modelo moderno y rápido
+                'models/gemini-1.5-pro',        # Alternativa más potente
+                'models/gemini-pro',            # Fallback clásico
             ]
             
             model_created = False
