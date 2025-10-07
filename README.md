@@ -19,12 +19,15 @@ PriceFinder IA transforma la búsqueda manual de productos en una decisión de c
 
 ## ✨ Características
 
-- **Búsqueda Multi-Sitio**: Scraping simultáneo en las 5 tiendas más grandes de EE.UU.
-- **Análisis Inteligente**: Google Gemini normaliza nombres y detecta productos idénticos
-- **Comparación Visual**: Gráficos interactivos y tabla comparativa
-- **Recomendaciones IA**: Sistema de clasificación (Mejor Precio, Alternativa, No Recomendado)
-- **Interfaz Moderna**: UI responsive con Tailwind CSS
-- **Containerizado**: Listo para despliegue con Docker
+- **Búsqueda Multi-Sitio Híbrida**: 
+  - ✅ **GRATIS:** Amazon + eBay (plan gratuito ScraperAPI)
+  - 💎 **PREMIUM:** Walmart + BestBuy (requiere ScraperAPI pago)
+- **Análisis Inteligente con IA**: Google Gemini normaliza nombres, detecta productos idénticos y genera insights
+- **Comparación Visual Profesional**: Gráficos interactivos, tabla responsiva, y cards para móvil
+- **Recomendaciones IA**: Sistema inteligente (🏆 Mejor Opción, ✅ Buena Alternativa, ⚠️ Considerar, ❌ No Recomendado)
+- **100% Responsivo**: Mobile-first design - perfecto en cualquier dispositivo
+- **Detección Automática**: Muestra badge "PRO" si detecta plan premium de ScraperAPI
+- **Despliegue Fácil**: Listo para Vercel, Render, Railway o Docker
 
 ## 🛠️ Stack Tecnológico
 
@@ -82,20 +85,37 @@ docker run -p 5000:5000 pricefinder-ia
 
 ## 🔑 Configuración de API Keys
 
-### Google Gemini API
+### Google Gemini API (100% Gratuito)
 
-1. Ve a [Google AI Studio](https://ai.google.dev/)
+1. Ve a [Google AI Studio](https://aistudio.google.com/app/apikey)
 2. Inicia sesión con tu cuenta de Google
-3. Crea un nuevo proyecto
-4. Genera una API Key
-5. Copia la key (la necesitarás en la interfaz web)
+3. Click en "Create API Key"
+4. Copia la key (empieza con `AIza...`)
+5. Pégala en la interfaz web
 
-### ScraperAPI
+### ScraperAPI - Modelo Híbrido
 
-1. Regístrate en [ScraperAPI](https://www.scraperapi.com/)
-2. El plan gratuito incluye 5,000 requests/mes
+#### **Plan Gratuito (Recomendado para empezar)**
+1. Regístrate en [ScraperAPI](https://www.scraperapi.com/signup)
+2. Plan gratuito: **5,000 requests/mes**
 3. Copia tu API Key desde el dashboard
-4. Úsala en la interfaz web
+4. **Funciona con:**
+   - ✅ Amazon (perfecto)
+   - ✅ eBay (muy bien)
+5. **No funciona con:**
+   - ❌ Walmart (requiere plan pago)
+   - ❌ Best Buy (requiere plan pago)
+
+#### **Plan Hobby - $49/mes (Opcional)**
+1. Actualiza tu plan en ScraperAPI
+2. **250,000 requests/mes**
+3. **Funciona con TODAS las tiendas:**
+   - ✅ Amazon
+   - ✅ eBay
+   - ✅ Walmart
+   - ✅ Best Buy
+
+**La app detecta automáticamente qué plan tienes y muestra las tiendas disponibles.** 🎯
 
 ## 🎯 Uso
 
@@ -254,9 +274,9 @@ Este proyecto está bajo la Licencia MIT. Ver `LICENSE` para más detalles.
 
 ## 👨‍💻 Autor
 
-**Tu Nombre**
-- GitHub: [@tu-usuario](https://github.com/tu-usuario)
-- Email: tu-email@ejemplo.com
+**Raul Pivet Alvarez**
+- GitHub: [@Sinsapiar1](https://github.com/Sinsapiar1)
+- Proyecto: [PriceFinder IA](https://github.com/Sinsapiar1/pricefinder-ia)
 
 ## 🙏 Agradecimientos
 

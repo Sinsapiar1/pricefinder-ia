@@ -86,10 +86,14 @@ function displayResults(data) {
     const resultsSection = document.getElementById('resultsSection');
     resultsSection.classList.remove('hidden');
     
+    // Detectar qué tiendas trajeron datos
+    const storesFound = detectStoresInResults(data.products);
+    displayStoresStatus(storesFound);
+    
     // Mostrar resumen de IA
     displayAISummary(data.summary);
     
-    // Mostrar insights inteligentes (NUEVO)
+    // Mostrar insights inteligentes
     if (data.insights && data.insights.length > 0) {
         displayAIInsights(data.insights);
     }
@@ -105,6 +109,51 @@ function displayResults(data) {
     
     // Scroll suave a los resultados
     resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Detectar qué tiendas trajeron datos REALES
+function detectStoresInResults(products) {
+    const stores = {
+        'amazon.com': false,
+        'ebay.com': false,
+        'walmart.com': false,
+        'bestbuy.com': false
+    };
+    
+    products.forEach(product => {
+        const tienda = product.tienda.toLowerCase();
+        if (stores.hasOwnProperty(tienda)) {
+            stores[tienda] = true;
+        }
+    });
+    
+    return stores;
+}
+
+// Mostrar status dinámico de tiendas
+function displayStoresStatus(storesFound) {
+    const premiumStores = ['walmart.com', 'bestbuy.com'];
+    const hasPremium = premiumStores.some(store => storesFound[store]);
+    
+    if (hasPremium) {
+        showPremiumBanner();
+    }
+}
+
+// Mostrar banner si usuario tiene plan premium
+function showPremiumBanner() {
+    const banner = document.createElement('div');
+    banner.className = 'bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl shadow-xl p-4 mb-6 text-white text-center animate-pulse';
+    banner.innerHTML = `
+        <div class="flex items-center justify-center gap-2">
+            <i class="fas fa-crown text-yellow-300 text-2xl"></i>
+            <span class="font-bold text-lg">¡ScraperAPI Premium Detectado!</span>
+        </div>
+        <p class="text-sm mt-2 opacity-90">Comparando en Walmart y Best Buy también</p>
+    `;
+    
+    const resultsSection = document.getElementById('resultsSection');
+    resultsSection.insertBefore(banner, resultsSection.firstChild);
 }
 
 // Mostrar resumen de IA
@@ -198,16 +247,20 @@ function displayProductsTable(products) {
             const precioVsPromedio = product.precio_vs_promedio || '0%';
             const precioVsClass = precioVsPromedio.startsWith('-') ? 'text-green-600' : 'text-red-600';
             const categoriaIcon = getCategoriaIcon(product.categoria || 'Diferente');
+            const isPremiumStore = isPremiumTier(product.tienda);
             
             return `
-                <div class="bg-white border-2 ${badgeClass.includes('green') ? 'border-green-300' : badgeClass.includes('blue') ? 'border-blue-300' : 'border-gray-300'} rounded-2xl p-4 shadow-lg hover:shadow-xl transition-shadow">
+                <div class="bg-white border-2 ${badgeClass.includes('green') ? 'border-green-300' : badgeClass.includes('blue') ? 'border-blue-300' : 'border-gray-300'} rounded-2xl p-4 shadow-lg hover:shadow-xl transition-shadow ${isPremiumStore ? 'ring-2 ring-purple-300' : ''}">
                     <div class="flex items-start justify-between mb-3">
                         <div class="flex items-center gap-2">
                             <div class="w-12 h-12 rounded-xl bg-gradient-to-br ${getStoreColor(product.tienda)} flex items-center justify-center text-white font-bold shadow-md">
                                 ${getStoreInitials(product.tienda)}
                             </div>
                             <div>
-                                <p class="font-bold text-gray-800">${product.tienda}</p>
+                                <div class="flex items-center gap-2">
+                                    <p class="font-bold text-gray-800">${product.tienda}</p>
+                                    ${isPremiumStore ? '<span class="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold">PRO</span>' : ''}
+                                </div>
                                 ${condicionBadge}
                             </div>
                         </div>
@@ -254,15 +307,19 @@ function displayProductsTable(products) {
             const precioVsPromedio = product.precio_vs_promedio || '0%';
             const precioVsClass = precioVsPromedio.startsWith('-') ? 'text-green-600' : 'text-red-600';
             const categoriaIcon = getCategoriaIcon(product.categoria || 'Diferente');
+            const isPremiumStore = isPremiumTier(product.tienda);
             
             return `
-                <tr class="border-b hover:bg-indigo-50 transition-colors">
+                <tr class="border-b hover:bg-indigo-50 transition-colors ${isPremiumStore ? 'bg-purple-50/30' : ''}">
                     <td class="px-6 py-4">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-lg bg-gradient-to-br ${getStoreColor(product.tienda)} flex items-center justify-center text-white font-bold text-sm shadow">
                                 ${getStoreInitials(product.tienda)}
                             </div>
-                            <span class="font-semibold text-gray-800">${product.tienda}</span>
+                            <div>
+                                <span class="font-semibold text-gray-800">${product.tienda}</span>
+                                ${isPremiumStore ? '<div class="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold inline-block ml-2">PRO</div>' : ''}
+                            </div>
                         </div>
                     </td>
                     <td class="px-6 py-4" style="max-width: 400px;">
@@ -462,6 +519,12 @@ function getCategoriaIcon(categoria) {
         'Diferente': '❓'
     };
     return icons[categoria] || '📦';
+}
+
+// Detectar si es tienda premium
+function isPremiumTier(tienda) {
+    const premiumStores = ['walmart.com', 'bestbuy.com', 'target.com'];
+    return premiumStores.includes(tienda.toLowerCase());
 }
 
 // Funciones para logos de tiendas (colores de marca reales)

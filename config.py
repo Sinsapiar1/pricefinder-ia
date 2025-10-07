@@ -23,17 +23,23 @@ class Config:
     # Configuración de producción
     TESTING = os.environ.get('TESTING', 'False').lower() == 'true'
     
-    # Sitios para scraping - Orden optimizado (más fácil primero)
+    # Sitios para scraping - Estrategia Híbrida (Gratis + Premium)
+    # Gratis: Amazon + eBay (funcionan con plan gratuito)
+    # Premium: Walmart + BestBuy (requieren ScraperAPI pago)
     TARGET_SITES = [
-        'amazon.com',      # Funciona siempre (sin render)
-        'ebay.com',        # Simple y rápido (sin render)
-        'walmart.com',     # Necesita render (más lento)
-        'bestbuy.com',     # Necesita render (más lento)
+        'amazon.com',      # ✅ GRATIS - Funciona siempre
+        'ebay.com',        # ✅ GRATIS - Funciona generalmente
+        'walmart.com',     # 💎 PREMIUM - Requiere plan pago
+        'bestbuy.com',     # 💎 PREMIUM - Requiere plan pago
     ]
     
-    # Límites optimizados para plan gratuito ScraperAPI
-    MAX_RESULTS_PER_SITE = 5  # Hasta 5 productos por tienda
-    REQUEST_TIMEOUT = 25  # Timeout generoso para sitios con render
+    # Clasificación de tiendas
+    FREE_TIER_SITES = ['amazon.com', 'ebay.com']
+    PREMIUM_SITES = ['walmart.com', 'bestbuy.com']
+    
+    # Límites optimizados
+    MAX_RESULTS_PER_SITE = 5
+    REQUEST_TIMEOUT = 25
 
 class ProductionConfig(Config):
     """Configuración para producción"""

@@ -46,7 +46,11 @@
                         <h1 class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                             PriceFinder IA
                         </h1>
-                        <p class="text-xs sm:text-sm text-gray-600">Comparación en Tiempo Real con IA</p>
+                        <p class="text-xs sm:text-sm text-gray-600">
+                            Comparación en Tiempo Real con IA
+                            <span class="hidden sm:inline text-gray-400 mx-2">•</span>
+                            <span class="hidden sm:inline text-gray-500">by Raul Pivet Alvarez</span>
+                        </p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
@@ -74,18 +78,24 @@
                 <p class="text-lg sm:text-xl mb-6 text-indigo-100">
                     Comparamos precios reales en <strong>Amazon, BestBuy y más</strong> usando Inteligencia Artificial
                 </p>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-8">
                     <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                        <div class="text-3xl font-bold">⚡</div>
-                        <div class="text-sm mt-2">Análisis en Tiempo Real</div>
+                        <div class="text-3xl font-bold">✅</div>
+                        <div class="text-sm mt-2 font-semibold">Amazon + eBay</div>
+                        <div class="text-xs opacity-75">100% Gratis</div>
                     </div>
                     <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                         <div class="text-3xl font-bold">🤖</div>
-                        <div class="text-sm mt-2">Powered by Gemini IA</div>
+                        <div class="text-sm mt-2">Análisis con IA</div>
                     </div>
                     <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                         <div class="text-3xl font-bold">💰</div>
                         <div class="text-sm mt-2">Ahorra hasta 40%</div>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-purple-300">
+                        <div class="text-3xl font-bold">💎</div>
+                        <div class="text-sm mt-2 font-semibold">Walmart + BestBuy</div>
+                        <div class="text-xs opacity-75">Con API Premium</div>
                     </div>
                 </div>
             </div>
@@ -204,27 +214,35 @@
                     </button>
                 </div>
 
-                <!-- Info de Tiendas -->
+                <!-- Info de Tiendas con Badge Free/Premium -->
                 <div class="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-4 border border-gray-200">
                     <div class="flex items-center justify-center flex-wrap gap-3 sm:gap-4 text-xs text-gray-700">
                         <span class="font-bold text-gray-800">Comparamos en tiempo real:</span>
-                        <div class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg shadow-sm">
+                        <div class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg shadow-sm border-2 border-green-300">
                             <i class="fab fa-amazon text-orange-500 text-lg"></i>
                             <span class="font-semibold">Amazon</span>
+                            <span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">FREE</span>
                         </div>
-                        <div class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg shadow-sm">
-                            <i class="fas fa-store text-blue-500 text-lg"></i>
-                            <span class="font-semibold">Walmart</span>
-                        </div>
-                        <div class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg shadow-sm">
+                        <div class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg shadow-sm border-2 border-green-300">
                             <i class="fab fa-ebay text-red-500 text-lg"></i>
                             <span class="font-semibold">eBay</span>
+                            <span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">FREE</span>
                         </div>
-                        <div class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg shadow-sm">
+                        <div class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg shadow-sm border border-gray-300 opacity-75">
+                            <i class="fas fa-store text-blue-500 text-lg"></i>
+                            <span class="font-semibold">Walmart</span>
+                            <span class="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold">PRO</span>
+                        </div>
+                        <div class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg shadow-sm border border-gray-300 opacity-75">
                             <i class="fas fa-shopping-bag text-blue-600 text-lg"></i>
                             <span class="font-semibold">Best Buy</span>
+                            <span class="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold">PRO</span>
                         </div>
                     </div>
+                    <p class="text-center text-xs text-gray-600 mt-3">
+                        <i class="fas fa-info-circle text-blue-500"></i>
+                        <span class="font-semibold">Walmart y Best Buy</span> requieren ScraperAPI plan pago para funcionar
+                    </p>
                 </div>
             </form>
         </div>
@@ -401,7 +419,10 @@
                     <i class="fas fa-code text-indigo-600"></i>
                     Desarrollado con 
                     <i class="fas fa-heart text-red-500"></i> 
-                    usando Flask & Google Gemini
+                    por <span class="font-bold text-indigo-600">Raul Pivet Alvarez</span>
+                </p>
+                <p class="text-xs text-gray-500 mb-1">
+                    Powered by Flask, Google Gemini IA & ScraperAPI
                 </p>
                 <p class="text-xs text-gray-500">
                     Los precios son reales y actualizados en tiempo real. No guardamos tus API keys.
