@@ -412,34 +412,19 @@ class ProductScraper:
                 
                 nombre_texto = name_elem.text.strip()
                 
-                # Filtrar items especiales/patrocinados/basura de eBay
-                filtros_ebay = [
-                    'shop on ebay',
-                    'based on number',
-                    'sponsored',
-                    'see more',
-                    'new listing',
-                    'advertisement',
-                    'promoted'
-                ]
+                # Filtro MUY SIMPLE - Solo eliminar basura obvia
+                if len(nombre_texto) < 5:
+                    print(f"    eBay item {idx}: Nombre muy corto")
+                    continue
                 
-                # Verificar si contiene palabras de filtro
                 nombre_lower = nombre_texto.lower()
-                es_item_especial = any(filtro in nombre_lower for filtro in filtros_ebay)
                 
-                # También verificar longitud mínima razonable
-                if es_item_especial or len(nombre_texto) < 15:
-                    print(f"    eBay item {idx}: Item especial/patrocinado saltado: '{nombre_texto[:30]}'")
+                # Solo filtrar si EMPIEZA con estas frases exactas
+                if nombre_lower.startswith('shop on ebay') or nombre_lower.startswith('based on'):
+                    print(f"    eBay item {idx}: Item especial filtrado")
                     continue
                 
-                # Verificar que el nombre tenga al menos una palabra del producto buscado
-                # Esto evita items completamente no relacionados
-                product_words = product_name.lower().split()
-                tiene_palabra_relevante = any(word in nombre_lower for word in product_words if len(word) > 3)
-                
-                if not tiene_palabra_relevante:
-                    print(f"    eBay item {idx}: No relevante para '{product_name}'")
-                    continue
+                print(f"    eBay item {idx}: ✓ '{nombre_texto[:60]}'...")
                 
                 # Buscar precio con MÚLTIPLES selectores
                 price_elem = item.find('span', class_='s-item__price')

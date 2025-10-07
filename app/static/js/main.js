@@ -83,6 +83,18 @@ function updateProgress(percentage, status) {
 
 // Mostrar resultados
 function displayResults(data) {
+    console.log('📊 displayResults llamada con:', data);
+    console.log(`   Total productos recibidos: ${data.products?.length || 0}`);
+    
+    // Mostrar distribución por tienda en consola
+    if (data.products && data.products.length > 0) {
+        const tiendas = {};
+        data.products.forEach(p => {
+            tiendas[p.tienda] = (tiendas[p.tienda] || 0) + 1;
+        });
+        console.log('   Distribución por tienda:', tiendas);
+    }
+    
     const resultsSection = document.getElementById('resultsSection');
     resultsSection.classList.remove('hidden');
     
