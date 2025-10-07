@@ -29,9 +29,9 @@ class Config:
         'bestbuy.com'
     ]
     
-    # Límites de búsqueda (optimizado para Vercel)
-    MAX_RESULTS_PER_SITE = 2  # Reducido para ser más rápido
-    REQUEST_TIMEOUT = 15  # Aumentado pero razonable
+    # Límites de búsqueda (optimizado para cuenta gratuita de ScraperAPI)
+    MAX_RESULTS_PER_SITE = 5  # Aumentado para más opciones
+    REQUEST_TIMEOUT = 20  # Tiempo razonable para scraping
 
 class ProductionConfig(Config):
     """Configuración para producción"""
